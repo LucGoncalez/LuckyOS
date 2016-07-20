@@ -26,7 +26,7 @@
     Este programa detecta a quantidade de memoria instalada.
   Mostrando os resultados.
   --------------------------------------------------------------------------
-  Versao: 0.1
+  Versao: 0.2
   Data: 25/03/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
