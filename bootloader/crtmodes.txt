@@ -1,0 +1,26 @@
+Lista de modos de video em modo texto:
+
+MDA = 80x25 - Mono  (7)
+
+CGA = 40x25 - Gray  (0)
+CGA = 40x25 - Color (1)
+CGA = 80x25 - Gray  (2)
+CGA = 80x25 - Color (3)
+
+EGA = 40x43 - Gray  (0+)
+EGA = 40x43 - Color (1+)
+EGA = 80X43 - Gray  (2+)
+EGA = 80X43 - Color (3+)
+EGA = 80x43 - Mono  (7+)
+
+VGA = 40x50 - Gray  (0+)
+VGA = 40x50 - Color (1+)
+VGA = 80X50 - Gray  (2+)
+VGA = 80X50 - Color (3+)
+VGA = 80x50 - Mono  (7+)
+
+SVGA(VESA) = 80x60  (?)
+SVGA(VESA) = 132x25 (?)
+SVGA(VESA) = 132x43 (?)
+SVGA(VESA) = 132x50 (?)
+SVGA(VESA) = 132x60 (?)
