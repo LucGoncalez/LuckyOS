@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos basicos usados por outras diversas Units.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 22/03/2013
+  Versao: 0.2
+  Data: 24/03/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc basic.pas
@@ -39,13 +39,50 @@ unit Basic;
 interface
 
 function TestBitsByte(ByteVar : Byte; ByteBits : Byte) : Boolean;
+function WordToHex(Value : Word; Size : Byte) : String;
 
 implementation
+
+{Constante usada para conversao em hex}
+const
+  HexValues : array[0..$F] of char =
+  ('0', '1', '2', '3', '4', '5', '6' , '7',
+   '8', '9', 'A', 'B', 'C', 'D', 'E' , 'F');
+
 
 {Testa se ByteBits esta presente em ByteVar}
 function TestBitsByte(ByteVar : Byte; ByteBits : Byte) : Boolean;
 begin
   TestBitsByte := (ByteVar and ByteBits) = ByteBits;
+end;
+
+{Converte um valor numerico para string em hex}
+function WordToHex(Value : Word; Size : Byte) : String;
+var
+  Temp : String;
+  Result : String;
+  Dig : Byte;
+
+begin
+  Temp := '';
+
+  while (Value > 0) do
+  begin
+    Dig := Value mod $10;
+    Value := Value div $10;
+
+    Temp := Temp + HexValues[Dig];
+  end;
+
+  while (Length(Temp) < Size) do
+    Temp := Temp + '0';
+
+  Result := '';
+
+  for Dig := Length(Temp) downto 1 do
+    Result := Result + Temp[Dig];
+
+  WordToHex := Result;
 end;
 
 end.
