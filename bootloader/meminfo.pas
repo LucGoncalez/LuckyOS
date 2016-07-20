@@ -25,7 +25,7 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para obtencao de memoria.
   --------------------------------------------------------------------------
-  Versao: 0.1
+  Versao: 0.2
   Data: 25/03/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
@@ -95,6 +95,24 @@ var
   vMemory : array[0..MaxBlock] of TMemoryBlock;
   vHighBlock : Byte;
 
+{Procedimento interno para limpar o bloco}
+procedure ClearBlock(Block : Byte);
+begin
+  vMemory[Block].Base := 0;
+  vMemory[Block].Limit := 0;
+  vMemory[Block].Size := 0;
+end;
+
+{Procedimento interno para mover um bloco e limpar o anterior}
+procedure MoveBlock(Src, Dest : Byte);
+begin
+  vMemory[Dest].Base := vMemory[Src].Base;
+  vMemory[Dest].Limit := vMemory[Src].Limit;
+  vMemory[Dest].Size := vMemory[Src].Size;
+
+  ClearBlock(Src);
+end;
+
 {Atualiza os dados}
 procedure DetectMem;
 var
@@ -139,6 +157,32 @@ begin
   {Calculando Limites}
   for I := 0 to MaxBlock do
     vMemory[I].Limit := vMemory[I].Base + vMemory[I].Size;
+
+  {Verificando o "buraco" nos 16M}
+  if (vMemory[2].Limit >= vMemory[3].Base) and (vMemory[3].Size > 0) then
+  begin
+    {Junta os blocos 2 e 3}
+    vMemory[2].Limit := vMemory[3].Limit;
+    vMemory[2].Size := vMemory[2].Limit - vMemory[2].Base;
+
+    {Limpa o bloco 3}
+    ClearBlock(3);
+  end;
+
+  {Verificando se o bloco 1 esta contido no 2}
+  if (vMemory[1].Base >= vMemory[2].Base) and
+    (vMemory[1].Limit <= vMemory[2].Limit) then
+  begin
+    MoveBlock(2, 1);
+  end;
+
+  {Verifica se o bloco 1 e vazio = falha na int}
+  if (vMemory[1].Size = 0) then
+  begin
+    {Move o blocos 2 para 1 e, 3 para 2}
+    MoveBlock(2, 1);
+    MoveBlock(3, 2);
+  end;
 
   {Verificando quantos blocos existem}
   vHighBlock := 0;
