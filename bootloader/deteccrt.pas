@@ -21,68 +21,76 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit Basic.pas
+  Programa DetecCRT.pas
   --------------------------------------------------------------------------
-  Esta Unit possui procedimentos basicos usados por outras diversas Units.
+    Este programa detecta o tipo do dipositivo de video usado pela BIOS. E
+  informacoes adicionais. Mostrando os resultados.
   --------------------------------------------------------------------------
-  Versao: 0.2
+  Versao: 0.1
   Data: 24/03/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
-  > tpc basic.pas
+  > tpc /b deteccrt.pas
   ------------------------------------------------------------------------
-  Executar: Nao executavel diretamente; Unit.
+  Executar: Pode ser executado no DOS/Windows em Modo Real ou Protegido.
+  > deteccrt.exe
+
+  * Se voce leu esse aviso acima, entao pode nao querer ficar respendo toda
+  vez, para evitar isso basta acrescentar um ' :)' apos o nome, assim:
+  > deteccpu.exe :)
 ===========================================================================}
 
-unit Basic;
+program DetecCRT;
 
-interface
-
-function TestBitsByte(ByteVar : Byte; ByteBits : Byte) : Boolean;
-function WordToHex(Value : Word; Size : Byte) : String;
-
-implementation
-
-{Constante usada para conversao em hex}
-const
-  HexValues : array[0..$F] of char =
-  ('0', '1', '2', '3', '4', '5', '6' , '7',
-   '8', '9', 'A', 'B', 'C', 'D', 'E' , 'F');
-
-
-{Testa se ByteBits esta presente em ByteVar}
-function TestBitsByte(ByteVar : Byte; ByteBits : Byte) : Boolean;
-begin
-  TestBitsByte := (ByteVar and ByteBits) = ByteBits;
-end;
-
-{Converte um valor numerico para string em hex}
-function WordToHex(Value : Word; Size : Byte) : String;
-var
-  Temp : String;
-  Result : String;
-  Dig : Byte;
+uses CopyRigh, Basic, CRTInfo;
 
 begin
-  Temp := '';
+  ShowWarning;
+  Writeln;
+  Writeln('Detectando CRT...');
+  Writeln;
 
-  while (Value > 0) do
+  DetectCRT; {Chama o procedimento para detectar a CRT}
+
+  if GetCRT_Error then
+    Writeln('Erro durante a deteccao da CRT!')
+  else
   begin
-    Dig := Value mod $10;
-    Value := Value div $10;
+    Write('Tipo do adaptador: ');
 
-    Temp := Temp + HexValues[Dig];
+    case GetCRTType of
+      CRTA_MDA : Writeln('MDA');
+      CRTA_CGA : Writeln('CGA');
+      CRTA_EGA : Writeln('EGA');
+      CRTA_VGA : Writeln('VGA');
+    else
+      Writeln('Desconhecido!');
+    end;
+
+    Writeln;
+    Writeln('Caracteristicas:');
+    Writeln(' - BIOS Mode : 0x', WordToHex(GetCRTMode, 2));
+    Writeln(' - Numero de linhas: ', GetCRTRows);
+    Writeln(' - Numero de colunas: ', GetCRTCols);
+    Writeln(' - Segmento da memoria de video: 0x', WordToHex(GetCRTSeg, 4));
+    Writeln(' - Endereco do controlador (porta): 0x', WordToHex(GetCRTAddr6845, 4));
+    Writeln;
+
+    if GetCRT_80C then
+      Writeln(' - Suporte a 80 colunas');
+
+    if GetCRT_Ex then
+      Writeln(' - Suporte a 43/50 linhas');
+
+    if GetCRT_MDA then
+      Writeln(' - Monocromatico (Compativel com MDA)')
+    else
+      if GetCRT_Color then
+        Writeln(' - Suporte a cores (16)')
+      else
+        Writeln(' - Suporte a grayscale (16)');
   end;
 
-  while (Length(Temp) < Size) do
-    Temp := Temp + '0';
-
-  Result := '';
-
-  for Dig := Length(Temp) downto 1 do
-    Result := Result + Temp[Dig];
-
-  WordToHex := Result;
-end;
-
+  Writeln;
+  Finish;
 end.
