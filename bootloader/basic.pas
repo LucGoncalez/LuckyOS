@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos basicos usados por outras diversas Units.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 25/03/2013
+  Versao: 0.4
+  Data: 30/03/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc basic.pas
@@ -38,9 +38,21 @@ unit Basic;
 
 interface
 
+type
+  TPointerFar16 = packed record
+    Ofs : Word;
+    Seg : Word;
+  end;
+
 function TestBitsByte(ByteVar : Byte; ByteBits : Byte) : Boolean;
+
 function WordToHex(Value : Word; Size : Byte) : String;
 function DWordToHex(Value : LongInt; Size : Byte; Divisor : Byte) : String;
+
+function FileExists(FName : String) : Boolean;
+
+function PFar16ToPLinear(PF16 : TPointerFar16) : LongInt;
+function PLinearToPFar16(PL : LongInt) : LongInt;
 
 implementation
 
@@ -119,6 +131,50 @@ begin
   end;
 
   DWordToHex := Result;
+end;
+
+{Verifica se arquivo exite no disco}
+function FileExists(FName : String) : Boolean;
+var
+  F : File;
+
+begin
+  Assign(F, FName);
+
+  {$I-}
+  Reset(F);
+  {$I+}
+
+  if (IOResult = 0) then
+  begin
+    Close(F);
+    FileExists := True;
+  end
+  else
+    FileExists := False;
+end;
+
+{Converte ponteiro FAR16 para endereco linear}
+function PFar16ToPLinear(PF16 : TPointerFar16) : LongInt;
+var
+  Temp : LongInt;
+
+begin
+  Temp := PF16.Seg;
+  Temp := (Temp * $10) + PF16.Ofs;
+
+  PFar16ToPLinear := Temp;
+end;
+
+{Converte endereco linear em ponteiro FAR16}
+function PLinearToPFar16(PL : LongInt) : LongInt;
+var
+  Temp : TPointerFar16;
+begin
+  Temp.Seg := PL div $10;
+  Temp.Ofs := PL mod $10;
+
+  PLinearToPFar16 := LongInt(Temp);
 end;
 
 end.
