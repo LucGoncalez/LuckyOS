@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 30/03/2013
+  Versao: 0.2
+  Data: 02/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -42,7 +42,7 @@
 
 program LoadLOS;
 
-uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, BootAux;
+uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux;
 
 {Constantes gerais}
 const
@@ -56,13 +56,13 @@ const
 {Variaveis globais}
 var
   vCPUType :TCPUType;
-  vLowMemory : LongInt;
-  vHighMemory : LongInt;
+  vLowMemory : DWord;
+  vHighMemory : DWord;
   vCRTInfo : Word;
   vCRTRows, vCRTCols : Byte;
   vCRTPort, vCRTSeg : Word;
-  vExecLinear : LongInt;
-  vExecSize : LongInt;
+  vExecLinear : DWord;
+  vExecSize : DWord;
 
 {Verifica a CPU}
 procedure TestCPU;
@@ -152,7 +152,7 @@ begin
     else
       Write('Grayscale');
 
-  Writeln(' (Port/Mem: 0x', WordToHex(vCRTPort, 4), '/0x', WordToHex(vCRTSeg, 4), ')');
+  Writeln(' (Port/Mem: 0x', WordToHex(vCRTPort), '/0x', WordToHex(vCRTSeg), ')');
 
   {verifica se retornou erro durante a deteccao do video}
   if GetCRT_Error then
@@ -165,11 +165,11 @@ end;
 {Cria um espaco de execucao}
 procedure MakeExecSpace;
 var
-  vMaxAvail : LongInt;
+  vMaxAvail : DWord;
   vTempSize : Word;
   vTempPointer : Pointer;
   vTempSpace : TPointerFar16;
-  vTempLinear : LongInt;
+  vTempLinear : DWord;
 
 begin
   {aloca espaco em Temp}
@@ -193,19 +193,19 @@ begin
   vExecSize := vTempSize - (vExecLinear - vTempLinear);
 
   {mostra informacoes do espaco de execucao}
-  Writeln('"Espaco de execucao" criado com ', vExecSize, ' bytes em 0x', DWordToHex(vExecLinear, 5, 0));
+  Writeln('"Espaco de execucao" criado com ', vExecSize, ' bytes em 0x', DWordToHex2(vExecLinear));
 end;
 
 {Copia o kernel para a memoria}
 procedure LoadKernel;
 var
   vKernel : File;
-  vKernelSize : LongInt;
-  vMaxAvail : LongInt;
+  vKernelSize : DWord;
+  vMaxAvail : DWord;
   vBufferSize : Word;
   vBuffer : Pointer;
   vBufferSeg : TPointerFar16;
-  vBufferLinear : LongInt;
+  vBufferLinear : DWord;
   nPassos : Word;
   vPasso : Word;
   vLidos : Word;
@@ -240,7 +240,7 @@ begin
   vBufferSeg := TPointerFar16(vBuffer);
   vBufferLinear := PFar16ToPLinear(vBufferSeg);
 
-  Writeln('Buffer criado com ', vBufferSize, ' bytes em 0x', DWordToHex(vBufferLinear, 5, 0));
+  Writeln('Buffer criado com ', vBufferSize, ' bytes em 0x', DWordToHex2(vBufferLinear));
 
   {Verificando que o kernel pode ser copiado em quantos passos}
   if (vKernelSize > vBufferSize) then
@@ -274,7 +274,7 @@ end;
 {Chama o kernel}
 procedure ExecKernel;
 begin
-  Writeln('Executando kernel em 0x', DWordToHex(vExecLinear, 5, 0));
+  Writeln('Executando kernel em 0x', DWordToHex2(vExecLinear));
 
   JumpToLinear(vExecLinear, vCRTSeg);
 
