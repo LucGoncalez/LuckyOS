@@ -25,9 +25,8 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos de videos da BIOS.
 ; --------------------------------------------------------------------------
-; Versao: 0.1.1
-; Data: 24/03/2013
-; Revisao: 31/03/2013
+; Versao: 0.2
+; Data: 01/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bios10.asm
@@ -40,11 +39,11 @@ GLOBAL BiosInt10x0F, BiosInt10x1130B
 SEGMENT CODE PUBLIC USE 16
 
 ;===========================================================================
-; function BiosInt10x0F : LongInt; external; {near; nostackframe}
+; function BiosInt10x0F : DWord; external; {near; nostackframe}
 ; --------------------------------------------------------------------------
 ; Obtem o estado do video atual.
 ; --------------------------------------------------------------------------
-; Retorno: LongInt::
+; Retorno: DWord::
 ;
 ;   TBiosInt10x0FResult = packed record
 ;     Mode : Byte;
@@ -68,11 +67,11 @@ BiosInt10x0F:
 retn
 
 ;===========================================================================
-; function BiosInt10x1130B(FuncNo : Byte) : LongInt; external; {near}
+; function BiosInt10x1130B(FuncNo : Byte) : DWord; external; {near}
 ; --------------------------------------------------------------------------
 ; Obtem o estado do video atual.
 ; --------------------------------------------------------------------------
-; Retorno: LongInt::
+; Retorno: DWord::
 ;
 ;   TBiosInt10x1130B_Result = packed record
 ;     BytesPerChar : Word;
