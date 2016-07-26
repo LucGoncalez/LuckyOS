@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos basicos usados por outras diversas Units.
   --------------------------------------------------------------------------
-  Versao: 0.4
-  Data: 30/03/2013
+  Versao: 0.5
+  Data: 01/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc basic.pas
@@ -39,29 +39,22 @@ unit Basic;
 interface
 
 type
+  DWord = LongInt;
+
   TPointerFar16 = packed record
     Ofs : Word;
     Seg : Word;
   end;
 
-function TestBitsByte(ByteVar : Byte; ByteBits : Byte) : Boolean;
+  function TestBitsByte(ByteVar : Byte; ByteBits : Byte) : Boolean;
 
-function WordToHex(Value : Word; Size : Byte) : String;
-function DWordToHex(Value : LongInt; Size : Byte; Divisor : Byte) : String;
+  function PFar16ToPLinear(PF16 : TPointerFar16) : DWord;
+  function PLinearToPFar16(PL : DWord) : DWord;
 
-function FileExists(FName : String) : Boolean;
+  function FileExists(FName : String) : Boolean;
 
-function PFar16ToPLinear(PF16 : TPointerFar16) : LongInt;
-function PLinearToPFar16(PL : LongInt) : LongInt;
 
 implementation
-
-{Constante usada para conversao em hex}
-const
-  HexValues : array[0..$F] of char =
-  ('0', '1', '2', '3', '4', '5', '6' , '7',
-   '8', '9', 'A', 'B', 'C', 'D', 'E' , 'F');
-
 
 {Testa se ByteBits esta presente em ByteVar}
 function TestBitsByte(ByteVar : Byte; ByteBits : Byte) : Boolean;
@@ -69,71 +62,30 @@ begin
   TestBitsByte := (ByteVar and ByteBits) = ByteBits;
 end;
 
-{Converte um valor numerico para string em hex}
-function WordToHex(Value : Word; Size : Byte) : String;
+{Converte ponteiro FAR16 para endereco linear}
+function PFar16ToPLinear(PF16 : TPointerFar16) : DWord;
 var
-  Temp : String;
-  Result : String;
-  Dig : Byte;
+  Temp : DWord;
 
 begin
-  Temp := '';
+  Temp := PF16.Seg;
+  Temp := (Temp * $10) + PF16.Ofs;
 
-  while (Value > 0) do
-  begin
-    Dig := Value mod $10;
-    Value := Value div $10;
-
-    Temp := Temp + HexValues[Dig];
-  end;
-
-  while (Length(Temp) < Size) do
-    Temp := Temp + '0';
-
-  Result := '';
-
-  for Dig := Length(Temp) downto 1 do
-    Result := Result + Temp[Dig];
-
-  WordToHex := Result;
+  PFar16ToPLinear := Temp;
 end;
 
-{Converte um valor numerico para string em hex}
-function DWordToHex(Value : LongInt; Size : Byte; Divisor : Byte) : String;
+{Converte endereco linear em ponteiro FAR16}
+function PLinearToPFar16(PL : DWord) : DWord;
 var
-  Temp : String;
-  Result : String;
-  Dig : Byte;
-
+  Temp : TPointerFar16;
 begin
-  Temp := '';
+  Temp.Seg := PL div $10;
+  Temp.Ofs := PL mod $10;
 
-  while (Value <> 0) do
-  begin
-    Dig := Value and $F;
-    Value := Value shr 4;
-
-    Temp := Temp + HexValues[Dig];
-  end;
-
-  while (Length(Temp) < Size) do
-    Temp := Temp + '0';
-
-  Result := '';
-
-  for Dig := Length(Temp) downto 1 do
-  begin
-    Result := Result + Temp[Dig];
-
-    if (Divisor > 0) and (Dig > 1) then
-      if (((Dig - 1) mod Divisor) = 0) then
-        Result := Result + #39;
-  end;
-
-  DWordToHex := Result;
+  PLinearToPFar16 := DWord(Temp);
 end;
 
-{Verifica se arquivo exite no disco}
+{Verifica se arquivo existe no disco}
 function FileExists(FName : String) : Boolean;
 var
   F : File;
@@ -152,29 +104,6 @@ begin
   end
   else
     FileExists := False;
-end;
-
-{Converte ponteiro FAR16 para endereco linear}
-function PFar16ToPLinear(PF16 : TPointerFar16) : LongInt;
-var
-  Temp : LongInt;
-
-begin
-  Temp := PF16.Seg;
-  Temp := (Temp * $10) + PF16.Ofs;
-
-  PFar16ToPLinear := Temp;
-end;
-
-{Converte endereco linear em ponteiro FAR16}
-function PLinearToPFar16(PL : LongInt) : LongInt;
-var
-  Temp : TPointerFar16;
-begin
-  Temp.Seg := PL div $10;
-  Temp.Ofs := PL mod $10;
-
-  PLinearToPFar16 := LongInt(Temp);
 end;
 
 end.

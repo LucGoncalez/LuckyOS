@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos que auxiliam o boot.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 30/03/2013
+  Versao: 0.2
+  Data: 01/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc bootaux.pas
@@ -38,32 +38,32 @@ unit BootAux;
 
 interface
 
-procedure CopyLinear(Src, Dest, Count : LongInt);
-procedure JumpToLinear(Addr : LongInt; Param : Word);
+uses Basic;
+
+procedure CopyLinear(Src, Dest, Count : DWord);
+procedure JumpToLinear(Addr : DWord; Param : Word);
 
 implementation
-
-uses Basic;
 
 {$L BOOTAUX.OBJ}
 
 {==========================================================================}
-  procedure CopyFAR16(Src, Dest : LongInt; Count : Word); external; {near;}
+  procedure CopyFAR16(Src, Dest : DWord; Count : Word); external; {near;}
 { --------------------------------------------------------------------------
   Copia Count bytes de Src para Dest.
 ===========================================================================}
 
 {==========================================================================}
-  procedure JumpFAR16(Addr : LongInt; Param : Word); external; {near}
+  procedure JumpFAR16(Addr : DWord; Param : Word); external; {near}
 { --------------------------------------------------------------------------
   Salta para a rotina localizada no endereco ADDR, passando Param em AX.
 ===========================================================================}
 
 
 {Copia Count bytes de Src para Dest, em enderecos linear}
-procedure CopyLinear(Src, Dest, Count : LongInt);
+procedure CopyLinear(Src, Dest, Count : DWord);
 var
-  vSrc, vDest : LongInt;
+  vSrc, vDest : DWord;
 
 begin
   vSrc := PLinearToPFar16(Src);
@@ -72,9 +72,9 @@ begin
 end;
 
 {Chama a rotina no endereco linear}
-procedure JumpToLinear(Addr : LongInt; Param : Word);
+procedure JumpToLinear(Addr : DWord; Param : Word);
 var
-  vAddr : LongInt;
+  vAddr : DWord;
 
 begin
   vAddr := PLinearToPFar16(Addr);

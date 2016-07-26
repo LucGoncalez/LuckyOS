@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para obtencao de memoria.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 25/03/2013
+  Versao: 0.3
+  Data: 02/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc meminfo.pas
@@ -38,11 +38,14 @@ unit MemInfo;
 
 interface
 
+uses Basic;
+
   procedure DetectMem;
   function GetBlocksCount : Byte;
-  function GetMemoryBase(Block : Byte) : LongInt;
-  function GetMemoryLimit(Block : Byte) : LongInt;
-  function GetMemorySize(Block : Byte) : LongInt;
+  function GetMemoryBase(Block : Byte) : DWord;
+  function GetMemoryLimit(Block : Byte) : DWord;
+  function GetMemorySize(Block : Byte) : DWord;
+
 
 implementation
 
@@ -79,9 +82,9 @@ function BiosInt15xE801H: Word; external; {near; nostackframe}
 
 type
   TMemoryBlock = packed record
-    Base : LongInt;
-    Size : LongInt;
-    Limit : LongInt;
+    Base : DWord;
+    Size : DWord;
+    Limit : DWord;
   end;
 
 const
@@ -120,7 +123,7 @@ var
   vBiosInt12 : Word;
   vBiosInt15x88 : Word;
   vBiosInt15xE801L : Word;
-  vBiosInt15xE801H : LongInt; {evita erro de conversao posterior}
+  vBiosInt15xE801H : DWord; {evita erro de conversao posterior}
 
 begin
   {Definindo a base dos blocos}
@@ -202,7 +205,7 @@ begin
 end;
 
 {Retorna o endereco base do bloco}
-function GetMemoryBase(Block : Byte) : LongInt;
+function GetMemoryBase(Block : Byte) : DWord;
 begin
   if (Block >= 0) and (Block <= vHighBlock) then
     GetMemoryBase := vMemory[Block].Base shl 10
@@ -211,7 +214,7 @@ begin
 end;
 
 {Retorna o limite superior do bloco}
-function GetMemoryLimit(Block : Byte) : LongInt;
+function GetMemoryLimit(Block : Byte) : DWord;
 begin
   if (Block >= 0) and (Block <= vHighBlock) then
   begin
@@ -225,7 +228,7 @@ begin
 end;
 
 {Retorna o tamanho do bloco em KB}
-function GetMemorySize(Block : Byte) : LongInt;
+function GetMemorySize(Block : Byte) : DWord;
 begin
   if (Block >= 0) and (Block <= vHighBlock) then
     GetMemorySize := vMemory[Block].Size
