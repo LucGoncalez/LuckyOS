@@ -25,8 +25,8 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos que auxiliam o boot.
 ; --------------------------------------------------------------------------
-; Versao: 0.1
-; Data: 30/03/2013
+; Versao: 0.2
+; Data: 01/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bootaux.asm
@@ -39,7 +39,7 @@ GLOBAL CopyFAR16, JumpFAR16
 SEGMENT CODE USE 16
 
 ;===========================================================================
-; procedure CopyFAR16(Src, Dest : LongInt; Count : Word); external; {near}
+; procedure CopyFAR16(Src, Dest : DWord; Count : Word); external; {near}
 ; --------------------------------------------------------------------------
 ; Copia Count bytes de Src para Dest.
 ;===========================================================================
@@ -85,7 +85,7 @@ CopyFAR16:
 retn 10
 
 ;===========================================================================
-; procedure JumpFAR16(Addr : LongInt; Param : Word); external; {near}
+; procedure JumpFAR16(Addr : DWord; Param : Word); external; {near}
 ; --------------------------------------------------------------------------
 ; Salta para a rotina localizada no endereco ADDR, passando Param em AX.
 ;===========================================================================
