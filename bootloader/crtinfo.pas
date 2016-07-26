@@ -25,9 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para obtencao de dados do CRT.
   --------------------------------------------------------------------------
-  Versao: 0.1.1
-  Data: 24/03/2013
-  Revisao: 31/03/2013
+  Versao: 0.2
+  Data: 01/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc crtinfo.pas
@@ -92,19 +91,18 @@ const
   function GetCRTSeg : Word;
   function GetCRTAddr6845 : Word;
 
+
 implementation
 
 uses Basic;
 
 {$L BIOS10.OBJ}
 
-function BiosInt10x0F : LongInt; external; {near; nostackframe}
+function BiosInt10x0F : DWord; external; {near; nostackframe}
 {===========================================================================
-  function BiosInt10x0F : LongInt; external; near; nostackframe
-  --------------------------------------------------------------------------
   Obtem o estado do video atual.
   --------------------------------------------------------------------------
-  Retorno: LongInt::
+  Retorno: DWord::
 
     TBiosInt10x0FResult = packed record
       Mode : Byte;
@@ -115,14 +113,11 @@ function BiosInt10x0F : LongInt; external; {near; nostackframe}
 
 ===========================================================================}
 
-function BiosInt10x1130B(FuncNo : Byte) : LongInt; external; {near}
+function BiosInt10x1130B(FuncNo : Byte) : DWord; external; {near}
 {===========================================================================
-  function BiosInt10x1130B(FuncNo : Byte) : LongInt; external;
-    near; nostackframe
-  --------------------------------------------------------------------------
   Obtem o estado do video atual.
   --------------------------------------------------------------------------
-  Retorno: LongInt::
+  Retorno: DWord::
 
     TBiosInt10x1130B_Result = packed record
       BytesPerChar : Word;
@@ -170,7 +165,7 @@ procedure _GetCRTInfo;
 var
   Error : Boolean;
 
-  vDWordTemp : LongInt;
+  vDWordTemp : DWord;
   vCRTMode : Byte;
   vFlags : Byte;
   vCRTType : TCRTType;
