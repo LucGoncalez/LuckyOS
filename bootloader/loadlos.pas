@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 02/04/2013
+  Versao: 0.3
+  Data: 06/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -196,6 +196,7 @@ begin
   Writeln('"Espaco de execucao" criado com ', vExecSize, ' bytes em 0x', DWordToHex2(vExecLinear));
 end;
 
+
 {Copia o kernel para a memoria}
 procedure LoadKernel;
 var
@@ -273,12 +274,37 @@ end;
 
 {Chama o kernel}
 procedure ExecKernel;
+var
+  vCS : Word;
+  vDS : Word;
+  vES : Word;
+  VSS : Word;
+  vEntry : Word;
+  vStack : Word;
+  vParam : Word;
+
 begin
   Writeln('Executando kernel em 0x', DWordToHex2(vExecLinear));
 
-  JumpToLinear(vExecLinear, vCRTSeg);
+  vCS := vExecLinear div $10;
+  vEntry := vExecLinear mod $10;
 
-  Writeln('O kernel retornou!!!')
+  vParam := vCRTSeg;
+
+  vDS := GetDS;
+  vES := vDS;
+
+  vSS := GetSS;
+  vStack := GetSP;
+
+  if (vStack > $400) then
+    vStack := $3FE
+  else
+    vStack := ((vStack - 10) div $10) * $10;
+
+  GoKernel16(vCS, vDS, vES, vSS, vEntry, vStack, vParam);
+
+  {Impossivel o retorno a esse ponto pelo kernel}
 end;
 
 {Procedimento principal}

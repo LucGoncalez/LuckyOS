@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos que auxiliam o boot.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 01/04/2013
+  Versao: 0.3
+  Data: 06/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc bootaux.pas
@@ -41,7 +41,23 @@ interface
 uses Basic;
 
 procedure CopyLinear(Src, Dest, Count : DWord);
-procedure JumpToLinear(Addr : DWord; Param : Word);
+
+procedure GoKernel16(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
+{Carrega e chama o kernel previamente configurado:
+
+  CS : Segmento/descritor do codigo;
+  DS : Segmento/descritor de dados;
+  ES : Segmento/descritor extra;
+  SS : Segmento/descritor da pilha;
+
+  Entry : Ponto de entrada do kernel (Offset em CS);
+  Stack : Base da pilha (Offset em SS);
+  Param : Parametro passado ao kernel em AX;
+}
+
+function GetDS : Word;
+function GetSS : Word;
+function GetSP : Word;
 
 implementation
 
@@ -51,12 +67,6 @@ implementation
   procedure CopyFAR16(Src, Dest : DWord; Count : Word); external; {near;}
 { --------------------------------------------------------------------------
   Copia Count bytes de Src para Dest.
-===========================================================================}
-
-{==========================================================================}
-  procedure JumpFAR16(Addr : DWord; Param : Word); external; {near}
-{ --------------------------------------------------------------------------
-  Salta para a rotina localizada no endereco ADDR, passando Param em AX.
 ===========================================================================}
 
 
@@ -71,14 +81,37 @@ begin
   CopyFAR16(vSrc, vDest, Count);
 end;
 
-{Chama a rotina no endereco linear}
-procedure JumpToLinear(Addr : DWord; Param : Word);
-var
-  vAddr : DWord;
+{==========================================================================}
+procedure GoKernel16(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word); external; {far}
+{ --------------------------------------------------------------------------
+  Configura e chama o kernel previamente carregado:
 
-begin
-  vAddr := PLinearToPFar16(Addr);
-  JumpFAR16(vAddr, Param);
-end;
+    CS : Segmento/descritor do codigo;
+    DS : Segmento/descritor de dados;
+    ES : Segmento/descritor extra;
+    SS : Segmento/descritor da pilha;
+
+    Entry : Ponto de entrada do kernel (Offset em CS);
+    Stack : Base da pilha (Offset em SS);
+    Param : Parametro passado ao kernel em AX;
+===========================================================================}
+
+{==========================================================================}
+function GetDS : Word; external; {far}
+{ --------------------------------------------------------------------------
+  Retorna DS
+===========================================================================}
+
+{==========================================================================}
+function GetSS : Word; external; {far}
+{ --------------------------------------------------------------------------
+  Retorna SS
+===========================================================================}
+
+{==========================================================================}
+function GetSP : Word; external; {far}
+{ --------------------------------------------------------------------------
+  Retorna SP
+===========================================================================}
 
 end.
