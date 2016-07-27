@@ -25,8 +25,8 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos que auxiliam o boot.
 ; --------------------------------------------------------------------------
-; Versao: 0.2
-; Data: 01/04/2013
+; Versao: 0.3
+; Data: 06/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bootaux.asm
@@ -34,9 +34,19 @@
 ; Executar: Nao executavel diretamente.
 ;===========================================================================
 
-GLOBAL CopyFAR16, JumpFAR16
+GLOBAL CopyFAR16, GoKernel16, GetDS, GetSS, GetSP
 
-SEGMENT CODE USE 16
+SEGMENT DATA PUBLIC
+
+  ; Variaveis locais usadas por GoKernel16
+  CSeg    RESW  1
+  DSeg    RESW  1
+  ESeg    RESW  1
+  Entry   RESW  1
+  Param   RESW  1
+
+
+SEGMENT CODE PUBLIC USE 16
 
 ;===========================================================================
 ; procedure CopyFAR16(Src, Dest : DWord; Count : Word); external; {near}
@@ -85,34 +95,116 @@ CopyFAR16:
 retn 10
 
 ;===========================================================================
-; procedure JumpFAR16(Addr : DWord; Param : Word); external; {near}
+; procedure GoKernel16(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
+;   external; {far}
 ; --------------------------------------------------------------------------
-; Salta para a rotina localizada no endereco ADDR, passando Param em AX.
+; Configura e chama o kernel previamente carregado:
+;
+;   CS : Segmento/descritor do codigo;
+;   DS : Segmento/descritor de dados;
+;   ES : Segmento/descritor extra;
+;   SS : Segmento/descritor da pilha;
+;
+;   Entry : Ponto de entrada do kernel (Offset em CS);
+;   Stack : Base da pilha (Offset em SS);
+;   Param : Parametro passado ao kernel em AX;
 ;===========================================================================
-JumpFAR16:
-  ; cria a stackframe
+GoKernel16:
+  ; cria stackframe
   push bp
   mov bp, sp
 
-  ; parametros na pilha:
-  ;
-  ; bp+6  = dword => Addr
-  ; bp+4  = word  => Param
-  ; bp+2  = retn
-  ; bp+0  = bp
-  ;
-  ; total de bytes para limpar na saida 6
+  ; Parametros na pilha
+  ; --------------------
+  ; [+18] => W = CS
+  ; [+16] => W = DS
+  ; [+14] => W = ES
+  ; [+12] => W = SS
+  ; [+10] => W = Entry
+  ; [+8]  => W = Stack
+  ; [+6]  => W = Param
+  ; ---> 14 bytes
+  ; [+4]  ...
+  ; [+2]  => D = retf
+  ; [bp]  => W = BP
 
-  mov ax, [bp + 4] ; pega o parametro na pilha
-  mov bx, [bp + 6] ; pega o offset na pilha
-  mov cx, [bp + 8] ; pega o segmento na pilha
 
-  ; cria pilha para para salto
-  push cx   ; coloca o segmento na pilha
-  push bx   ; coloca o offset na pilha
-  retf      ; salta para a rotina (limpa o endereco na pilha)
+  ; salva valores em variaveis no segmento de dados
+  mov ax, [bp + 18] ; CS
+  mov [CSeg], ax
 
-  ; limpa a stackframe (se o procedimento retornar :-)
-  mov sp, bp
-  pop bp
-retn 6
+  mov ax, [bp + 16] ; DS
+  mov [DSeg], ax
+
+  mov ax, [bp + 14] ; ES
+  mov [ESeg], ax
+
+  mov ax, [bp + 10] ; Entry
+  mov [Entry], ax
+
+  mov ax, [bp + 6]  ; Param
+  mov [Param], ax
+
+  ; configura nova pilha
+  mov dx, [bp + 12] ; pega SS
+  mov ax, [bp + 8]  ; pega SP (Stack)
+
+  mov ss, dx  ; atualiza o segmento da pilha
+  mov sp, ax  ; atualiza ponteiro do topo da pilha
+  mov bp, ax  ; atualiza ponteiro da base da pilha
+
+  xor ax, ax
+  mov [bp], ax    ; grava elemento nulo no comeco da pilha
+
+  ; cria endereco do salto
+  mov ax, [CSeg]
+  push ax
+
+  mov ax, [Entry]
+  push ax
+
+  ; coloca valores de DS e ES na pilha
+  mov ax, [DSeg]
+  push ax
+
+  mov ax, [ESeg]
+  push ax
+
+  ; pega parametro
+  mov ax, [Param]
+
+  ; atualiza segmentos de dados
+  pop es
+  pop ds
+
+  ; salta para o kernel (atualiza CS e Entry)
+  retf
+; Fim da rotina, impossivel retornar a esse ponto...
+
+
+;===========================================================================
+; function GetDS : Word; external; {far}
+; --------------------------------------------------------------------------
+; Retorna DS
+;===========================================================================
+GetDS:
+  mov ax, ds
+retf
+
+;===========================================================================
+; function GetSS : Word; external; {far}
+; --------------------------------------------------------------------------
+; Retorna SS
+;===========================================================================
+GetSS:
+  mov ax, ss
+retf
+
+;===========================================================================
+; function GetSP : Word; external; {far}
+; --------------------------------------------------------------------------
+; Retorna SP
+;===========================================================================
+GetSP:
+  mov ax, sp
+retf
