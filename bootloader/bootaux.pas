@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos que auxiliam o boot.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 06/04/2013
+  Versao: 0.4
+  Data: 07/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc bootaux.pas
@@ -42,7 +42,7 @@ uses Basic;
 
 procedure CopyLinear(Src, Dest, Count : DWord);
 
-procedure GoKernel16(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
+procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
 {Carrega e chama o kernel previamente configurado:
 
   CS : Segmento/descritor do codigo;
@@ -82,7 +82,7 @@ begin
 end;
 
 {==========================================================================}
-procedure GoKernel16(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word); external; {far}
+procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word); external; {far}
 { --------------------------------------------------------------------------
   Configura e chama o kernel previamente carregado:
 
