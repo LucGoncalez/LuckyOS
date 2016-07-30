@@ -23,10 +23,10 @@
 ;===========================================================================
 ; Lib BIOS12.asm
 ; --------------------------------------------------------------------------
-; Esta Lib possui procedimentos de deteccao de memoria.
+; Esta Lib possui procedimentos da Int12h.
 ; --------------------------------------------------------------------------
-; Versao: 0.1
-; Data: 25/03/2013
+; Versao: 0.3
+; Data: 10/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bios12.asm
@@ -39,7 +39,7 @@ GLOBAL BiosInt12
 SEGMENT CODE PUBLIC USE 16
 
 ;===========================================================================
-; function BiosInt12 : Word; external; {near; nostackframe}
+; function BiosInt12 : Word; external; {far; nostackframe}
 ; --------------------------------------------------------------------------
 ; Obtem a quantidade de memoria baixa em KB.
 ;===========================================================================
@@ -51,7 +51,7 @@ BiosInt12:
  .error:
   xor ax, ax  ; retorno zero eh erro
  .end:
-retn          ; finaliza a rotina
+retf          ; finaliza a rotina
 
 ;===========================================================================
 ; Int12$

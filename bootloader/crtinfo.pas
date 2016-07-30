@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para obtencao de dados do CRT.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 01/04/2013
+  Versao: 0.3
+  Data: 10/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc crtinfo.pas
@@ -94,53 +94,7 @@ const
 
 implementation
 
-uses Basic;
-
-{$L BIOS10.OBJ}
-
-function BiosInt10x0F : DWord; external; {near; nostackframe}
-{===========================================================================
-  Obtem o estado do video atual.
-  --------------------------------------------------------------------------
-  Retorno: DWord::
-
-    TBiosInt10x0FResult = packed record
-      Mode : Byte;
-      Cols : Byte;
-      Page : Byte;
-      Nul1 : Byte;
-    end;
-
-===========================================================================}
-
-function BiosInt10x1130B(FuncNo : Byte) : DWord; external; {near}
-{===========================================================================
-  Obtem o estado do video atual.
-  --------------------------------------------------------------------------
-  Retorno: DWord::
-
-    TBiosInt10x1130B_Result = packed record
-      BytesPerChar : Word;
-      Rows : Byte;
-      Nul1 : Byte;
-    end;
-
-===========================================================================}
-
-type
-  TBiosInt10x0F_Result = packed record
-    Mode : Byte;
-    Cols : Byte;
-    Page : Byte;
-    Nul1 : Byte;
-  end;
-
-  TBiosInt10x1130B_Result = packed record
-    BytesPerChar : Word;
-    Rows : Byte;
-    Nul1 : Byte;
-  end;
-
+uses Basic, Bios;
 
 {Constates de enderecos}
 const

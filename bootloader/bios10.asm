@@ -23,10 +23,10 @@
 ;===========================================================================
 ; Lib BIOS10.asm
 ; --------------------------------------------------------------------------
-; Esta Lib possui procedimentos de videos da BIOS.
+; Esta Lib possui procedimentos da Int10h.
 ; --------------------------------------------------------------------------
-; Versao: 0.2
-; Data: 01/04/2013
+; Versao: 0.3
+; Data: 10/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bios10.asm
@@ -39,7 +39,7 @@ GLOBAL BiosInt10x0F, BiosInt10x1130B
 SEGMENT CODE PUBLIC USE 16
 
 ;===========================================================================
-; function BiosInt10x0F : DWord; external; {near; nostackframe}
+; function BiosInt10x0F : DWord; external; {far; nostackframe}
 ; --------------------------------------------------------------------------
 ; Obtem o estado do video atual.
 ; --------------------------------------------------------------------------
@@ -64,10 +64,10 @@ BiosInt10x0F:
 
   xor dx, dx
   mov dl, bh
-retn
+retf
 
 ;===========================================================================
-; function BiosInt10x1130B(FuncNo : Byte) : DWord; external; {near}
+; function BiosInt10x1130B(FuncNo : Byte) : DWord; external; {far}
 ; --------------------------------------------------------------------------
 ; Obtem o estado do video atual.
 ; --------------------------------------------------------------------------
@@ -103,7 +103,7 @@ BiosInt10x1130B:
 
   mov sp, bp
   pop bp
-retn 2
+retf 2
 
 ;===========================================================================
 ; Int10$
