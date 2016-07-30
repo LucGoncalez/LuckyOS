@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para obtencao de memoria.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 02/04/2013
+  Versao: 0.4
+  Data: 10/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc meminfo.pas
@@ -49,36 +49,7 @@ uses Basic;
 
 implementation
 
-{$L BIOS12.OBJ}
-{$L BIOS15.OBJ}
-
-function BiosInt12 : Word; external; {near; nostackframe}
-{===========================================================================
-  function BiosInt12 : Word; external; near; nostackframe
-  --------------------------------------------------------------------------
-  Obtem a quantidade de memoria baixa em KB.
-===========================================================================}
-
-function BiosInt15x88 : Word; external; {near; nostackframe}
-{===========================================================================
-  function BiosInt15x88 : Word; external; near; nostackframe
-  --------------------------------------------------------------------------
-  Obtem a quantidade de memoria extendida (1M < 64M) em KB.
-===========================================================================}
-
-function BiosInt15xE801L: Word; external; {near; nostackframe}
-{===========================================================================
-  function BiosInt15xE801L: Word; external; near; nostackframe
-  --------------------------------------------------------------------------
-  Obtem a quantidade de memoria extendida (1M < 16M) em KB.
-===========================================================================}
-
-function BiosInt15xE801H: Word; external; {near; nostackframe}
-{===========================================================================
-  function BiosInt15xE801H: Word; external; near; nostackframe
-  --------------------------------------------------------------------------
-  Obtem a quantidade de memoria extendida ( > 16M) em 64 KB.
-===========================================================================}
+uses Bios;
 
 type
   TMemoryBlock = packed record
