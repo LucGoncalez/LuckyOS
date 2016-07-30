@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 06/04/2013
+  Versao: 0.4
+  Data: 07/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -42,7 +42,7 @@
 
 program LoadLOS;
 
-uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux;
+uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux, PM, Intrpts;
 
 {Constantes gerais}
 const
@@ -242,6 +242,7 @@ begin
   vBufferLinear := PFar16ToPLinear(vBufferSeg);
 
   Writeln('Buffer criado com ', vBufferSize, ' bytes em 0x', DWordToHex2(vBufferLinear));
+  Writeln;
 
   {Verificando que o kernel pode ser copiado em quantos passos}
   if (vKernelSize > vBufferSize) then
@@ -275,6 +276,12 @@ end;
 {Chama o kernel}
 procedure ExecKernel;
 var
+  Base : DWord;
+  Limite : DWord;
+  GDT : array[0..4] of TDescrSeg;
+  PTemp : TPointerFar16;
+  GDTR : TGdtR;
+
   vCS : Word;
   vDS : Word;
   vES : Word;
@@ -284,25 +291,96 @@ var
   vParam : Word;
 
 begin
-  Writeln('Executando kernel em 0x', DWordToHex2(vExecLinear));
+  Write('Configurando GDT... ');
 
-  vCS := vExecLinear div $10;
-  vEntry := vExecLinear mod $10;
+  {cria GDT, configura}
 
-  vParam := vCRTSeg;
+  {0x00 -- descritor nulo}
+  Base := 0;
+  Limite := 0;
 
-  vDS := GetDS;
-  vES := vDS;
+  SetupGDT(GDT[0], Base, Limite, 0, 0);
 
-  vSS := GetSS;
+  {Todos os descritores abaixo usam o mesmo limite}
+  Limite := $FFFF;
+
+  {0x08 -- descritor do segmento de codigo, kernel}
+  SetupGDT(GDT[1],  vExecLinear, Limite, ACS_CODE, 0);
+
+  {0x10 -- descritor do segmento de dados}
+  PTemp.Seg := GetDS;
+  PTemp.Ofs := 0;
+  {convertendo o endereco linear para DWord}
+  Base := PFar16ToPLinear(PTemp);
+  SetupGDT(GDT[2], Base, Limite, ACS_DATA, 0);
+
+  {0x18 -- descritor do segmento de pilha}
+  PTemp.Seg := GetSS;
+  PTemp.Ofs := 0;
+  {convertendo o endereco linear para DWord}
+  Base := PFar16ToPLinear(PTemp);
+  SetupGDT(GDT[3], Base, Limite, ACS_STACK, 0);
+
+  {0x20 -- descritor do segmento de video em modo texto}
+  PTemp.Seg := vCRTSeg;
+  PTemp.Ofs := 0;
+  {convertendo o endereco linear para DWord}
+  Base := PFar16ToPLinear(PTemp);
+  SetupGDT(GDT[4], Base, Limite, ACS_DATA, 0);
+
+  {setando o registrador GDTR}
+
+  {pegando o endereco da GDT}
+  PTemp.Seg := Seg(GDT);
+  PTemp.Ofs := Ofs(GDT);
+  {convertendo o endereco linear para DWord}
+  Base := PFar16ToPLinear(PTemp);
+
+  GDTR.Base  := Base;
+  GDTR.Limit := SizeOf(GDT) - 1;
+
+  LoadGDT(@GDTR);
+
+  Writeln('configurado!');
+
+  {prepara parametros para a chamada do kernel}
+  vCS := $08; {descritor para o segmento de codigo}
+  vEntry := 0;
+
+  vDS := $10; {descritor para o segmento de dados}
+  vES := $10;
+
+  vSS := $18; {descritor para o segmento de pilha}
   vStack := GetSP;
 
+  {1k de pilha eh suficiente para teste}
   if (vStack > $400) then
     vStack := $3FE
   else
     vStack := ((vStack - 10) div $10) * $10;
 
-  GoKernel16(vCS, vDS, vES, vSS, vEntry, vStack, vParam);
+  vParam := $20; {descritor do segmento de video}
+
+  Writeln;
+  Writeln('Ambiente de execucao:');
+  Writeln('CS: ', WordToHex(vCS));
+  Writeln('DS: ', WordToHex(vDS));
+  Writeln('ES: ', WordToHex(vES));
+  Writeln('SS: ', WordToHex(vSS));
+  Writeln('Entry: ', WordToHex(vEntry));
+  Writeln('Stack: ', WordToHex(vStack));
+  Writeln('Param: ', WordToHex(vParam));
+  Writeln;
+  Writeln('Executando kernel em 0x', DWordToHex2(vExecLinear));
+
+  {desabilita as interrupcoes para que as IRQs nao causem excecoes}
+  DisableInt;
+
+  {desabilita as NMIs tambem}
+  DisableNMIs;
+
+  {Vai para o modo protegido chamando o kernel}
+  GoKernel16PM(vCS, vDS, vES, vSS, vEntry, vStack, vParam);
 
   {Impossivel o retorno a esse ponto pelo kernel}
 end;
@@ -335,7 +413,6 @@ begin
   LoadKernel;
 
   {chama o kernel}
-  Writeln;
   ExecKernel;
 
   Finish;
