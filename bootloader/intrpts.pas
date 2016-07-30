@@ -21,97 +21,54 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit BootAux.pas
+  Unit Intrpts.pas
   --------------------------------------------------------------------------
-  Esta Unit possui procedimentos que auxiliam o boot.
+  Esta Unit possui procedimentos para controle de interrupcoes.
   --------------------------------------------------------------------------
-  Versao: 0.4
+  Versao: 0.1
   Data: 07/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
-  > tpc bootaux.pas
+  > tpc intrpts.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
 
-unit BootAux;
+unit Intrpts;
 
 interface
 
-uses Basic;
-
-procedure CopyLinear(Src, Dest, Count : DWord);
-
-procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
-{Carrega e chama o kernel previamente configurado:
-
-  CS : Segmento/descritor do codigo;
-  DS : Segmento/descritor de dados;
-  ES : Segmento/descritor extra;
-  SS : Segmento/descritor da pilha;
-
-  Entry : Ponto de entrada do kernel (Offset em CS);
-  Stack : Base da pilha (Offset em SS);
-  Param : Parametro passado ao kernel em AX;
-}
-
-function GetDS : Word;
-function GetSS : Word;
-function GetSP : Word;
+procedure DisableInt;
+procedure EnableInt;
+procedure DisableNMIs;
+procedure EnableNMIs;
 
 implementation
 
-{$L BOOTAUX.OBJ}
+{$L INTRPTS.OBJ}
 
 {==========================================================================}
-  procedure CopyFAR16(Src, Dest : DWord; Count : Word); external; {near;}
+  procedure DisableInt; external; {far}
 { --------------------------------------------------------------------------
-  Copia Count bytes de Src para Dest.
-===========================================================================}
-
-
-{Copia Count bytes de Src para Dest, em enderecos linear}
-procedure CopyLinear(Src, Dest, Count : DWord);
-var
-  vSrc, vDest : DWord;
-
-begin
-  vSrc := PLinearToPFar16(Src);
-  vDest := PLinearToPFar16(Dest);
-  CopyFAR16(vSrc, vDest, Count);
-end;
-
-{==========================================================================}
-procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word); external; {far}
-{ --------------------------------------------------------------------------
-  Configura e chama o kernel previamente carregado:
-
-    CS : Segmento/descritor do codigo;
-    DS : Segmento/descritor de dados;
-    ES : Segmento/descritor extra;
-    SS : Segmento/descritor da pilha;
-
-    Entry : Ponto de entrada do kernel (Offset em CS);
-    Stack : Base da pilha (Offset em SS);
-    Param : Parametro passado ao kernel em AX;
+  Disabilita as interrupcoes
 ===========================================================================}
 
 {==========================================================================}
-function GetDS : Word; external; {far}
+  procedure EnableInt; external; {far}
 { --------------------------------------------------------------------------
-  Retorna DS
+  Habilita as interrupcoes
 ===========================================================================}
 
 {==========================================================================}
-function GetSS : Word; external; {far}
+  procedure DisableNMIs; external; {far}
 { --------------------------------------------------------------------------
-  Retorna SS
+  Desabilita as NMIs
 ===========================================================================}
 
 {==========================================================================}
-function GetSP : Word; external; {far}
+  procedure EnableNMIs; external; {far}
 { --------------------------------------------------------------------------
-  Retorna SP
+ Habilita as NMIs
 ===========================================================================}
 
 end.

@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos basicos usados por outras diversas Units.
   --------------------------------------------------------------------------
-  Versao: 0.5
-  Data: 01/04/2013
+  Versao: 0.6
+  Data: 07/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc basic.pas
@@ -52,6 +52,9 @@ type
   function PLinearToPFar16(PL : DWord) : DWord;
 
   function FileExists(FName : String) : Boolean;
+
+  function LoWord(Value : DWord) : Word;
+  function HiWord(Value : DWord) : Word;
 
 
 implementation
@@ -104,6 +107,18 @@ begin
   end
   else
     FileExists := False;
+end;
+
+{Retorna o word baixo do DWord}
+function LoWord(Value : DWord) : Word;
+begin
+  LoWord := Value and $FFFF;
+end;
+
+{Retorna o word alto do DWord}
+function HiWord(Value : DWord) : Word;
+begin
+  HiWord := (Value shr 16) and $FFFF;
 end;
 
 end.

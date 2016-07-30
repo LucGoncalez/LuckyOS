@@ -25,8 +25,8 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos que auxiliam o boot.
 ; --------------------------------------------------------------------------
-; Versao: 0.3
-; Data: 06/04/2013
+; Versao: 0.4
+; Data: 07/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bootaux.asm
@@ -34,7 +34,7 @@
 ; Executar: Nao executavel diretamente.
 ;===========================================================================
 
-GLOBAL CopyFAR16, GoKernel16, GetDS, GetSS, GetSP
+GLOBAL CopyFAR16, GoKernel16PM, GetDS, GetSS, GetSP
 
 SEGMENT DATA PUBLIC
 
@@ -109,7 +109,7 @@ retn 10
 ;   Stack : Base da pilha (Offset em SS);
 ;   Param : Parametro passado ao kernel em AX;
 ;===========================================================================
-GoKernel16:
+GoKernel16PM:
   ; cria stackframe
   push bp
   mov bp, sp
@@ -144,6 +144,11 @@ GoKernel16:
 
   mov ax, [bp + 6]  ; Param
   mov [Param], ax
+
+  ; ativa o modo protegido
+  mov eax, cr0
+  or eax, 1
+  mov cr0, eax
 
   ; configura nova pilha
   mov dx, [bp + 12] ; pega SS
