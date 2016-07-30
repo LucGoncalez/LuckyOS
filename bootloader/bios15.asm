@@ -23,10 +23,10 @@
 ;===========================================================================
 ; Lib BIOS15.asm
 ; --------------------------------------------------------------------------
-; Esta Lib possui procedimentos de servico da BIOS.
+; Esta Lib possui procedimentos da Int15h.
 ; --------------------------------------------------------------------------
-; Versao: 0.1
-; Data: 25/03/2013
+; Versao: 0.3
+; Data: 10/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bios15.asm
@@ -39,7 +39,7 @@ GLOBAL BiosInt15x88, BiosInt15xE801L, BiosInt15xE801H
 SEGMENT CODE PUBLIC USE 16
 
 ;===========================================================================
-; function BiosInt15x88 : Word; external; {near; nostackframe}
+; function BiosInt15x88 : Word; external; {far; nostackframe}
 ; --------------------------------------------------------------------------
 ; Obtem a quantidade de memoria extendida (1M < 64M) em KB.
 ;===========================================================================
@@ -52,27 +52,27 @@ BiosInt15x88:
  .error:
   xor ax, ax    ; retorno zero eh erro
  .end:
-retn            ; finaliza a rotina
+retf            ; finaliza a rotina
 
 ;===========================================================================
-; function BiosInt15xE801L: Word; external; {near; nostackframe}
+; function BiosInt15xE801L: Word; external; {far; nostackframe}
 ; --------------------------------------------------------------------------
 ; Obtem a quantidade de memoria extendida (1M < 16M) em KB.
 ;===========================================================================
 BiosInt15xE801L:
   call near BiosInt15xE801
   mov ax, cx
-retn
+retf
 
 ;===========================================================================
-; function BiosInt15xE801H: Word; external; {near; nostackframe}
+; function BiosInt15xE801H: Word; external; {far; nostackframe}
 ; --------------------------------------------------------------------------
 ; Obtem a quantidade de memoria extendida ( > 16M) em 64 KB.
 ;===========================================================================
 BiosInt15xE801H:
   call near BiosInt15xE801
   mov ax, dx
-retn
+retf
 
 ;===========================================================================
 ; BiosInt15xE801
