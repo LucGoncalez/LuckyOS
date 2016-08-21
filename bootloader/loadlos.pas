@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.5
-  Data: 10/04/2013
+  Versao: 0.6
+  Data: 13/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -42,13 +42,14 @@
 
 program LoadLOS;
 
-uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux, PM, Intrpts;
+uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux, PM,
+  Intrpts, CRT, A20;
 
 {Constantes gerais}
 const
   cCPUMin = CT80386;
   cCPUMax = CT80586;
-  cHighMemoryMin = 0;
+  cHighMemoryMin = 2048; {2M}
   cKernelName = 'pkrnl01.bin';
   cMaxExecSpace = $FFF0;
   cMaxBuffer = $FFF0;
@@ -63,6 +64,9 @@ var
   vCRTPort, vCRTSeg : Word;
   vExecLinear : DWord;
   vExecSize : DWord;
+  vA20Bios : Boolean;
+  vA20KBC : Boolean;
+  vA20Fast : Boolean;
 
 {Verifica a CPU}
 procedure TestCPU;
@@ -162,6 +166,417 @@ begin
   end;
 end;
 
+{Testa suporte de A20 pela BIOS}
+function TestA20Bios : Boolean;
+  function DoTest : Boolean;
+  var
+    vTemp : Integer;
+    vStatus : Boolean;
+    vCheck : Boolean;
+
+  begin
+    {padrao retornar false}
+    DoTest := False;
+
+    { * pega o status atual * }
+    vTemp := BiosA20Status;
+
+    if (vTemp = -1) then
+      {a bios retornou erro}
+      Exit;
+
+    {a bios retornou ok}
+    vStatus := (vTemp = 1);
+    vCheck := CheckA20;
+
+    if (vStatus <> vCheck) then
+      {status pela bios diferente do teste}
+      Exit;
+
+    {bios e teste combinam}
+
+    {alterna o estado}
+    if vStatus then
+      {se habilitado, desabilite}
+      vStatus := BiosDisableA20
+    else
+      {se desabilitado, habilite}
+      vStatus := BiosEnableA20;
+
+    if not vStatus then
+      {funcao resultou erro}
+      Exit;
+
+    {funcao retornou ok}
+    {pega o status atual}
+    vTemp := BiosA20Status;
+
+    if (vTemp = -1) then
+      {a bios retornou erro}
+      Exit;
+
+    {a bios retornou ok}
+    vStatus := (vTemp = 1);
+
+    {verifica se inverteu o estado, vCheck ainda possui valor anterior}
+    if (vStatus = vCheck) then
+      {status igual o anterior}
+      Exit;
+
+    {faz novo teste de memoria}
+    vCheck := CheckA20;
+
+    if (vStatus <> vCheck) then
+      {status pela bios diferente do teste}
+      Exit;
+
+    {bios e teste combinam, passou!}
+    DoTest := True;
+  end;
+
+var
+  vResult : Boolean;
+
+begin
+  {faz o teste uma vez, inverte o estado}
+  vResult := DoTest;
+
+  if vResult then
+    {se 1o teste foi ok faz novamente, revertendo}
+    vResult := DoTest;
+
+  TestA20Bios := vResult;
+end;
+
+{Testa suporte de A20 pelo KBC}
+function TestA20KBC : Boolean;
+  function DoTest : Boolean;
+  var
+    vStatus : Boolean;
+    vCheck : Boolean;
+
+  begin
+    {padrao retornar false}
+    DoTest := False;
+
+    { * pega o status atual * }
+    vStatus := StatusA20KBC8042;
+    vCheck := CheckA20;
+
+    if (vStatus <> vCheck) then
+      {status diferente do teste}
+      Exit;
+
+    {status e teste combinam}
+    {alterna o estado}
+    if vStatus then
+      {se habilitado, desabilite}
+      vStatus := DisableA20KBC8042
+    else
+      {se desabilitado, habilite}
+      vStatus := EnableA20KBC8042;
+
+    if not vStatus then
+      {funcao resultou erro}
+      Exit;
+
+    {funcao retornou ok}
+    {pega o status atual}
+    vStatus := StatusA20KBC8042;
+
+    {verifica se inverteu o estado, vCheck ainda possui valor anterior}
+    if (vStatus = vCheck) then
+      {status igual o anterior}
+      Exit;
+
+    {faz novo teste de memoria}
+    vCheck := CheckA20;
+
+    if (vStatus <> vCheck) then
+      {status diferente do teste}
+      Exit;
+
+    {Status e teste combinam, passou!}
+    DoTest := True;
+  end;
+
+var
+  vResult : Boolean;
+
+begin
+  {faz o teste uma vez, inverte o estado}
+  vResult := DoTest;
+
+  if vResult then
+    {se 1o teste foi ok faz novamente, revertendo}
+    vResult := DoTest;
+
+  TestA20KBC := vResult;
+end;
+
+{Testa suporte de A20 pelo Fast Gate}
+function TestA20Fast : Boolean;
+  function DoTest : Boolean;
+  var
+    vStatus : Boolean;
+    vCheck : Boolean;
+
+  begin
+    {padrao retornar false}
+    DoTest := False;
+
+    { * pega o status atual * }
+    vStatus := StatusA20FastGate;
+    vCheck := CheckA20;
+
+    if (vStatus <> vCheck) then
+      {status diferente do teste}
+      Exit;
+
+    {status e teste combinam}
+    {alterna o estado}
+    if vStatus then
+      {se habilitado, desabilite}
+      vStatus := DisableA20FastGate
+    else
+      {se desabilitado, habilite}
+      vStatus := EnableA20FastGate;
+
+    if not vStatus then
+      {funcao resultou erro}
+      Exit;
+
+    {funcao retornou ok}
+    {pega o status atual}
+    vStatus := StatusA20FastGate;
+
+    {verifica se inverteu o estado, vCheck ainda possui valor anterior}
+    if (vStatus = vCheck) then
+      {status igual o anterior}
+      Exit;
+
+    {faz novo teste de memoria}
+    vCheck := CheckA20;
+
+    if (vStatus <> vCheck) then
+      {status diferente do teste}
+      Exit;
+
+    {Status e teste combinam, passou!}
+    DoTest := True;
+  end;
+
+var
+  vResult : Boolean;
+
+begin
+  {faz o teste uma vez, inverte o estado}
+  vResult := DoTest;
+
+  if vResult then
+    {se 1o teste foi ok faz novamente, revertendo}
+    vResult := DoTest;
+
+  TestA20Fast := vResult;
+end;
+
+{Detecta suporte a Fast Gate pelo KBC}
+function DetectA20Fast : Boolean;
+var
+  vStatus : Boolean;
+  vResult : Boolean;
+
+begin
+  {padrao retornar false}
+  DetectA20Fast := False;
+
+  vStatus := StatusA20KBC8042;
+
+  if (vStatus <> StatusA20FastGate) then
+    Exit;
+
+  if vStatus then
+    {habilitado, desabilita}
+    vResult := DisableA20KBC8042
+  else
+    {desabilitado, habilita}
+    vResult := EnableA20KBC8042;
+
+  if not vResult then
+    Exit;
+
+  {inverte o status}
+  vStatus := not vStatus;
+
+  if (vStatus <> StatusA20KBC8042) then
+    Exit;
+
+  if (vStatus <> StatusA20FastGate) then
+    Exit;
+
+  {Ok, Fast Gate possivelmente suportada}
+  DetectA20Fast := True;
+end;
+
+{Habilita o A20}
+procedure EnableA20;
+var
+  vTemp : Integer;
+
+begin
+  Write('Verificando suporte a A20 pela BIOS... ');
+
+  vTemp := BiosA20Support;
+
+  vA20Bios := (vTemp <> -1) ;
+
+  if vA20Bios then
+  begin
+    Writeln('OK');
+
+    vA20KBC := TestBitsByte(vTemp, cA20SupportKBC8042);
+    vA20Fast := TestBitsByte(vTemp, cA20SupportFastGate);
+  end
+  else
+    Writeln('FALHOU');
+
+  Writeln;
+
+  if vA20Bios then
+  begin
+    {Testa suporte pela BIOS}
+    Write('Testando suporte A20 pela BIOS... ');
+
+    vA20Bios := TestA20Bios;
+
+    if vA20Bios then
+      Writeln('OK')
+    else
+      Writeln('FALHOU');
+  end;
+
+  {se Bios falhar}
+  if not vA20Bios then
+  begin
+    {inicializa variaveis, considera possivel que tenha para testes posteriores...}
+    vA20KBC := True;
+    vA20Fast := False; {se não conseguir detectar considera como sem suporte...}
+  end;
+
+  if vA20KBC then
+  begin
+    {Testa suporte pelo KBC}
+    Write('Testando suporte A20 pelo KBC8042... ');
+
+    vA20KBC := TestA20KBC;
+
+    if vA20KBC then
+      Writeln('OK')
+    else
+      Writeln('FALHOU');
+  end;
+
+  if ((not vA20Bios) and vA20KBC) then
+  begin
+    {Sem suporte da BIOS, tenta detectar se possivel Fast Gate}
+    {Usa o KBC8042 como maneira segura}
+    Write('Tentando detectar a Fast Gate pelo KBC8042... ');
+
+    vA20Fast := DetectA20Fast;
+
+    if vA20Fast then
+      Writeln('OK')
+    else
+      Writeln('FALHOU');
+  end;
+
+  if vA20Fast then
+  begin
+    {se Fast Gate detectado, testa ele}
+    Write('Testando suporte A20 por Fast Gate... ');
+
+    vA20Fast := TestA20Fast;
+
+    if vA20Fast then
+      Writeln('OK')
+    else
+      Writeln('FALHOU');
+  end;
+
+  Writeln;
+
+  {verifica se ha pelo menos um suporte}
+  if (vA20Bios or vA20KBC or vA20Fast) then
+  begin
+    {verifica de A20 ficou habilitada, se nao habilita}
+
+    if vA20Fast then
+    begin
+      {faca pelo meio rapido}
+
+        if not StatusA20FastGate then
+        begin
+          Write('Habilitando A20 por Fast Gate... ');
+
+          if EnableA20FastGate then
+            Writeln('OK')
+          else
+            Writeln('FALHOU');
+        end;
+    end
+    else
+      if vA20Bios then
+      begin
+        {faca pelo meio seguro}
+
+        vTemp := BiosA20Status;
+
+        if (vTemp = -1) then
+          Writeln('Falha na habilitacao da A20 pela BIOS')
+        else
+          if (vTemp = 0) then
+          begin
+            Write('Habilitando A20 pela BIOS... ');
+
+            if BiosEnableA20 then
+              Writeln('OK')
+            else
+              Writeln('FALHOU');
+          end;
+      end
+      else
+      begin
+        {faca pelo meio antigo}
+        if not StatusA20KBC8042 then
+        begin
+          Write('Habilitando A20 pelo KBC8042... ');
+
+          if EnableA20KBC8042 then
+            Writeln('OK')
+          else
+            Writeln('FALHOU');
+        end;
+      end;
+
+    {executa o teste final}
+    Write('Verificado se realmente a A20 esta habilitada... ');
+
+    if CheckA20 then
+      Writeln('OK')
+    else
+    begin
+      Writeln('FALHA');
+      Writeln('Houve um erro durante o processo de habilitacao da A20, abortando!');
+      Finish;
+    end;
+  end
+  else
+  begin
+    Writeln('Sem suporte a A20 detectado, abortando!');
+    Finish;
+  end;
+end;
+
 {Cria um espaco de execucao}
 procedure MakeExecSpace;
 var
@@ -195,7 +610,6 @@ begin
   {mostra informacoes do espaco de execucao}
   Writeln('"Espaco de execucao" criado com ', vExecSize, ' bytes em 0x', DWordToHex2(vExecLinear));
 end;
-
 
 {Copia o kernel para a memoria}
 procedure LoadKernel;
@@ -291,7 +705,8 @@ var
   vParam : Word;
 
 begin
-  Write('Configurando GDT... ');
+  Writeln('Configurando GDT... ');
+  Writeln;
 
   {cria GDT, configura}
 
@@ -300,12 +715,14 @@ begin
   Limite := 0;
 
   SetupGDT(GDT[0], Base, Limite, 0, 0);
+  Writeln('0x00 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
 
   {Todos os descritores abaixo usam o mesmo limite}
   Limite := $FFFF;
 
   {0x08 -- descritor do segmento de codigo, kernel}
   SetupGDT(GDT[1],  vExecLinear, Limite, ACS_CODE, 0);
+  Writeln('0x08 => Base: ', DWordToHex2(vExecLinear), ' Limite: ', DWordToHex2(Limite));
 
   {0x10 -- descritor do segmento de dados}
   PTemp.Seg := GetDS;
@@ -313,6 +730,7 @@ begin
   {convertendo o endereco linear para DWord}
   Base := PFar16ToPLinear(PTemp);
   SetupGDT(GDT[2], Base, Limite, ACS_DATA, 0);
+  Writeln('0x10 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
 
   {0x18 -- descritor do segmento de pilha}
   PTemp.Seg := GetSS;
@@ -320,6 +738,7 @@ begin
   {convertendo o endereco linear para DWord}
   Base := PFar16ToPLinear(PTemp);
   SetupGDT(GDT[3], Base, Limite, ACS_STACK, 0);
+  Writeln('0x18 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
 
   {0x20 -- descritor do segmento de video em modo texto}
   PTemp.Seg := vCRTSeg;
@@ -327,6 +746,7 @@ begin
   {convertendo o endereco linear para DWord}
   Base := PFar16ToPLinear(PTemp);
   SetupGDT(GDT[4], Base, Limite, ACS_DATA, 0);
+  Writeln('0x20 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
 
   {setando o registrador GDTR}
 
@@ -341,7 +761,8 @@ begin
 
   LoadGDT(@GDTR);
 
-  Writeln('configurado!');
+  Writeln;
+  Writeln('Configurado!');
 
   {prepara parametros para a chamada do kernel}
   vCS := $08; {descritor para o segmento de codigo}
@@ -385,6 +806,10 @@ begin
   {Impossivel o retorno a esse ponto pelo kernel}
 end;
 
+
+var
+  vKey : Char;
+
 {Procedimento principal}
 begin
   ShowWarning;
@@ -404,6 +829,10 @@ begin
     Finish;
   end;
 
+  {habilita A20}
+  EnableA20;
+  Writeln;
+
   {cria o espaco de execucao}
   MakeExecSpace;
 
@@ -411,6 +840,11 @@ begin
   Writeln;
   Writeln('Imagem do kernel: ', cKernelName);
   LoadKernel;
+
+  Write('Pressione qualquer tecla para continuar... ');
+  vKey := ReadKey;
+  Writeln;
+  Writeln;
 
   {chama o kernel}
   ExecKernel;
