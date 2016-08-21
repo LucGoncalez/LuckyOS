@@ -26,7 +26,7 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.8
+  Versao: 0.9
   Data: 14/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
@@ -52,7 +52,7 @@ const
   cCPUMax = CT80586;
   cHighMemoryMin = 2048; {2M}
 
-  cKernelName = 'pkrnl01.bin';
+  cKernelName = 'pkrnl02.bin';
   cMaxBuffer = $FFF0;
 
   cExecEntry = $00220000; {2M +128K}
@@ -777,14 +777,11 @@ begin
   ATR := ATR_REALM;
   DoSetup(3);
 
-  {0x20 -- descritor do segmento de video em modo texto}
-  PTemp.Seg := vCRTSeg;
-  PTemp.Ofs := 0;
-  {convertendo o endereco linear para DWord}
-  Base := PFar16ToPLinear(PTemp);
-  Limite := $FFFF;
+  {0x20 -- descritor para flat32}
+  Base := $0;
+  Limite := $FFFFF;
   ACS := ACS_DATA;
-  ATR := ATR_REALM;
+  ATR := ATR_FLAT32;
   DoSetup(4);
 
   {setando o registrador GDTR}
@@ -808,12 +805,12 @@ begin
   vEntry := 0;
 
   vDS := $10; {descritor para o segmento de dados}
-  vES := $10;
+  vES := $20; {descritor para o segmento flat32}
 
   vSS := $18; {descritor para o segmento de pilha}
   vStack := $FFFE; {64k}
 
-  vParam := $20; {descritor do segmento de video}
+  vParam := vCRTSeg; {segmento de video}
 
   Writeln;
   Writeln('Ambiente de execucao:');
