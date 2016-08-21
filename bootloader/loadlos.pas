@@ -26,7 +26,7 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.6
+  Versao: 0.7
   Data: 13/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
@@ -49,7 +49,7 @@ uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux, PM,
 const
   cCPUMin = CT80386;
   cCPUMax = CT80586;
-  cHighMemoryMin = 2048; {2M}
+  cHighMemoryMin = 3072; {3M}
   cKernelName = 'pkrnl01.bin';
   cMaxExecSpace = $FFF0;
   cMaxBuffer = $FFF0;
@@ -725,18 +725,12 @@ begin
   Writeln('0x08 => Base: ', DWordToHex2(vExecLinear), ' Limite: ', DWordToHex2(Limite));
 
   {0x10 -- descritor do segmento de dados}
-  PTemp.Seg := GetDS;
-  PTemp.Ofs := 0;
-  {convertendo o endereco linear para DWord}
-  Base := PFar16ToPLinear(PTemp);
+  Base := $00210000; {2M + 64K}
   SetupGDT(GDT[2], Base, Limite, ACS_DATA, 0);
   Writeln('0x10 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
 
   {0x18 -- descritor do segmento de pilha}
-  PTemp.Seg := GetSS;
-  PTemp.Ofs := 0;
-  {convertendo o endereco linear para DWord}
-  Base := PFar16ToPLinear(PTemp);
+  Base := $00200000; {na marca do 2M}
   SetupGDT(GDT[3], Base, Limite, ACS_STACK, 0);
   Writeln('0x18 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
 
