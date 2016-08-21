@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para controle do modo protegido.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 07/04/2013
+  Versao: 0.2
+  Data: 14/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc pm.pas
@@ -93,7 +93,7 @@ type
 }
 
 const
-  {Flags de acesso}
+  {*** Flags de acesso ***}
   F_ACS_PRESENT = $80; {1000.0000}
 
   F_ACS_DPL0    = $00; {-}
@@ -128,6 +128,16 @@ const
   ACS_DATA      = F_ACS_PRESENT + ACS_DSEG + F_ACS_WRITABL;
   ACS_STACK     = F_ACS_PRESENT + ACS_DSEG + F_ACS_WRITABL;
 
+  {*** Flags de atributo ***}
+  F_ATR_GRANUL  = $80; {1000.0000}
+  F_ATR_OPSIZE  = $40; {0100.0000}
+  F_ATR_AVLSOFT = $10; {0001.0000}
+
+  {Ready-made}
+  ATR_REALM     = 0;
+  ATR_FLAT32    = F_ATR_GRANUL + F_ATR_OPSIZE;
+
+
   procedure LoadGDT(GDTR : Pointer);
 
   procedure SetupGDT(var Item : TDescrSeg; Base, Limit : DWord;
@@ -152,7 +162,7 @@ begin
   Item.BaseM   := HiWord(Base) mod $100;
   Item.BaseH   := HiWord(Base) div $100;
   Item.Limit   := LoWord(Limit);
-  Item.Attribs := Attribs + (HiWord(Limit) mod $10);
+  Item.Attribs := (Attribs and $F0) or (HiWord(Limit) and $000F);
   Item.Access  := Access;
 end;
 
