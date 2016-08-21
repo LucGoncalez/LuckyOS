@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.7
-  Data: 13/04/2013
+  Versao: 0.8
+  Data: 14/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -45,28 +45,37 @@ program LoadLOS;
 uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux, PM,
   Intrpts, CRT, A20;
 
+
 {Constantes gerais}
 const
   cCPUMin = CT80386;
   cCPUMax = CT80586;
-  cHighMemoryMin = 3072; {3M}
+  cHighMemoryMin = 2048; {2M}
+
   cKernelName = 'pkrnl01.bin';
-  cMaxExecSpace = $FFF0;
   cMaxBuffer = $FFF0;
+
+  cExecEntry = $00220000; {2M +128K}
+  cMaxExecSpace = $FFFF;
+
 
 {Variaveis globais}
 var
   vCPUType :TCPUType;
   vLowMemory : DWord;
   vHighMemory : DWord;
+
   vCRTInfo : Word;
   vCRTRows, vCRTCols : Byte;
   vCRTPort, vCRTSeg : Word;
-  vExecLinear : DWord;
-  vExecSize : DWord;
+
   vA20Bios : Boolean;
   vA20KBC : Boolean;
   vA20Fast : Boolean;
+
+  vExecSize : DWord;
+  vExecLinear : DWord;
+
 
 {Verifica a CPU}
 procedure TestCPU;
@@ -577,38 +586,51 @@ begin
   end;
 end;
 
-{Cria um espaco de execucao}
-procedure MakeExecSpace;
+{Habilita o Modo Unreal}
+procedure StartUnReal;
 var
-  vMaxAvail : DWord;
-  vTempSize : Word;
-  vTempPointer : Pointer;
-  vTempSpace : TPointerFar16;
-  vTempLinear : DWord;
+  PTemp : TPointerFar16;
+  GDT : array[0..1] of TDescrSeg;
+  GDTR : TGdtR;
 
 begin
-  {aloca espaco em Temp}
-  vMaxAvail := MaxAvail;
+  Write('Configurando o UnReal Mode... ');
 
-  if (vMaxAvail > cMaxExecSpace) then
-    vTempSize := cMaxExecSpace;
+  {cria GDT, configura}
 
-  GetMem(vTempPointer, vTempSize);
+  {0x00 -- descritor nulo}
+  SetupGDT(GDT[0], 0, 0, 0, 0);
+  {0x08 -- descritor do segmento de dados}
+  SetupGDT(GDT[1], 0, $FFFFF, ACS_DATA, ATR_FLAT32);
 
-  vTempSpace := TPointerFar16(vTempPointer);
-  vTempLinear := PFar16ToPLinear(vTempSpace);
+  {setando o registrador GDTR}
 
-  {corrige espaco de execucao se necessario}
-  if ((vTempLinear mod $10) = 0) then
-    vExecLinear := vTempLinear
-  else
-    vExecLinear := ((vTempLinear div $10) + 1) * $10;
+  {pegando o endereco da GDT}
+  PTemp.Seg := Seg(GDT);
+  PTemp.Ofs := Ofs(GDT);
 
-  {calcula o tamanho efetivo do espaco de execucao}
-  vExecSize := vTempSize - (vExecLinear - vTempLinear);
+  {convertendo o endereco linear para DWord}
+  GDTR.Base  := PFar16ToPLinear(PTemp);
+  GDTR.Limit := SizeOf(GDT) - 1;
 
-  {mostra informacoes do espaco de execucao}
-  Writeln('"Espaco de execucao" criado com ', vExecSize, ' bytes em 0x', DWordToHex2(vExecLinear));
+  LoadGDT(@GDTR);
+
+  {desabilita as interrupcoes para que as IRQs nao causem excecoes}
+  DisableInt;
+
+  {desabilita as NMIs tambem}
+  DisableNMIs;
+
+  {chama o procedimento para habilitar o Unreal}
+  EnableUnreal($08);
+
+  {habilita as NMIs}
+  EnableNMIs;
+
+  {habilita as interrupcoes}
+  EnableInt;
+
+  Writeln('OK');
 end;
 
 {Copia o kernel para a memoria}
@@ -690,19 +712,36 @@ end;
 {Chama o kernel}
 procedure ExecKernel;
 var
+  GDT : array[0..4] of TDescrSeg;
+  GDTR : TGdtR;
+
   Base : DWord;
   Limite : DWord;
-  GDT : array[0..4] of TDescrSeg;
+  ACS : Byte;
+  ATR : Byte;
+
   PTemp : TPointerFar16;
-  GDTR : TGdtR;
 
   vCS : Word;
   vDS : Word;
   vES : Word;
   VSS : Word;
+
   vEntry : Word;
   vStack : Word;
   vParam : Word;
+
+
+  procedure DoSetup(Entrada : Byte);
+  begin
+    SetupGDT(GDT[Entrada], Base, Limite, ACS, ATR);
+
+    Writeln('0x', ByteToHex(Entrada*8),
+      ' => Base: ', DWordToHex2(Base),
+      '  Limite: ', DWordToHex2(Limite),
+      '  ACS: ', ByteToHex(ACS),
+      '  ATR: ', ByteToHex(ATR));
+  end;
 
 begin
   Writeln('Configurando GDT... ');
@@ -713,34 +752,40 @@ begin
   {0x00 -- descritor nulo}
   Base := 0;
   Limite := 0;
-
-  SetupGDT(GDT[0], Base, Limite, 0, 0);
-  Writeln('0x00 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
-
-  {Todos os descritores abaixo usam o mesmo limite}
-  Limite := $FFFF;
+  ACS := 0;
+  ATR := 0;
+  DoSetup(0);
 
   {0x08 -- descritor do segmento de codigo, kernel}
-  SetupGDT(GDT[1],  vExecLinear, Limite, ACS_CODE, 0);
-  Writeln('0x08 => Base: ', DWordToHex2(vExecLinear), ' Limite: ', DWordToHex2(Limite));
+  Base := vExecLinear;
+  Limite := $FFFF;
+  ACS := ACS_CODE;
+  ATR := ATR_REALM;
+  DoSetup(1);
 
   {0x10 -- descritor do segmento de dados}
   Base := $00210000; {2M + 64K}
-  SetupGDT(GDT[2], Base, Limite, ACS_DATA, 0);
-  Writeln('0x10 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
+  Limite := $FFFF;
+  ACS := ACS_DATA;
+  ATR := ATR_REALM;
+  DoSetup(2);
 
   {0x18 -- descritor do segmento de pilha}
   Base := $00200000; {na marca do 2M}
-  SetupGDT(GDT[3], Base, Limite, ACS_STACK, 0);
-  Writeln('0x18 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
+  Limite := $FFFF;
+  ACS := ACS_STACK;
+  ATR := ATR_REALM;
+  DoSetup(3);
 
   {0x20 -- descritor do segmento de video em modo texto}
   PTemp.Seg := vCRTSeg;
   PTemp.Ofs := 0;
   {convertendo o endereco linear para DWord}
   Base := PFar16ToPLinear(PTemp);
-  SetupGDT(GDT[4], Base, Limite, ACS_DATA, 0);
-  Writeln('0x20 => Base: ', DWordToHex2(Base), ' Limite: ', DWordToHex2(Limite));
+  Limite := $FFFF;
+  ACS := ACS_DATA;
+  ATR := ATR_REALM;
+  DoSetup(4);
 
   {setando o registrador GDTR}
 
@@ -766,13 +811,7 @@ begin
   vES := $10;
 
   vSS := $18; {descritor para o segmento de pilha}
-  vStack := GetSP;
-
-  {1k de pilha eh suficiente para teste}
-  if (vStack > $400) then
-    vStack := $3FE
-  else
-    vStack := ((vStack - 10) div $10) * $10;
+  vStack := $FFFE; {64k}
 
   vParam := $20; {descritor do segmento de video}
 
@@ -827,8 +866,15 @@ begin
   EnableA20;
   Writeln;
 
+  {habilita Unreal Mode}
+  StartUnReal;
+
   {cria o espaco de execucao}
-  MakeExecSpace;
+  {MakeExecSpace;}
+
+  {define o ponto de carregamento}
+  vExecLinear := cExecEntry;
+  vExecSize := cMaxExecSpace;
 
   {carrega o kernel}
   Writeln;
