@@ -25,16 +25,17 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos da Int15h.
 ; --------------------------------------------------------------------------
-; Versao: 0.3
+; Versao: 0.4
 ; Data: 10/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bios15.asm
-; ------------------------------------------------------------------------
+; --------------------------------------------------------------------------
 ; Executar: Nao executavel diretamente.
 ;===========================================================================
 
 GLOBAL BiosInt15x88, BiosInt15xE801L, BiosInt15xE801H
+GLOBAL BiosInt15x2400, BiosInt15x2401, BiosInt15x2402, BiosInt15x2403
 
 SEGMENT CODE PUBLIC USE 16
 
@@ -46,13 +47,174 @@ SEGMENT CODE PUBLIC USE 16
 BiosInt15x88:
   xor ax, ax
   mov ah, 0x88  ; funcao 88h
+
   call near Int15$
-  jc .error     ; funcao nao suportada
-  jmp .end      ; vai para o fim da rotina
- .error:
+
+  jnc .end      ; vai para o fim da rotina
+
+  ;error:       ; funcao nao suportada
   xor ax, ax    ; retorno zero eh erro
+
  .end:
 retf            ; finaliza a rotina
+
+;===========================================================================
+; function BiosInt15x2400 : Word; external; {far; nostackframe}
+; --------------------------------------------------------------------------
+; Desabilita o A20
+; --------------------------------------------------------------------------
+; Retorno: Word::
+;
+;   0 = Ok
+;
+;   Hi = 1 = Falha
+;     Lo = Codigo de erro
+;
+;===========================================================================
+BiosInt15x2400:
+  mov ax, 0x2400  ; funcao 2400h
+
+  call near Int15$
+
+  ; verifica erro por carrier
+  jc .error
+
+  ; verifica erro por AH
+  cmp ah, 0
+  jne .error
+
+  ; Ok, AX retorna 0
+  xor ax, ax
+  jmp short .end
+
+ .error:
+  ; AH contem o codigo de erro
+  mov al, ah
+  mov ah, 1
+  ; se erro, AH = 1, AL contem o codigo de erro
+
+ .end:
+retf
+
+;===========================================================================
+; function BiosInt15x2401 : Word; external; {far; nostackframe}
+; --------------------------------------------------------------------------
+; Habilita o A20
+; --------------------------------------------------------------------------
+; Retorno: Word::
+;
+;   0 = Ok
+;
+;   Hi = 1 = Falha
+;     Lo = Codigo de erro
+;
+;===========================================================================
+BiosInt15x2401:
+  mov ax, 0x2401  ; funcao 2401h
+
+  call near Int15$
+
+  ; verifica erro por carrier
+  jc .error
+
+  ; verifica erro por AH
+  cmp ah, 0
+  jne .error
+
+  ; Ok, AX retorna 0
+  xor ax, ax
+  jmp short .end
+
+ .error:
+  ; AH contem o codigo de erro
+  mov al, ah
+  mov ah, 1
+  ; se erro, AH = 1, AL contem o codigo de erro
+
+ .end:
+retf
+
+;===========================================================================
+; function BiosInt15x2402 : Word; external; {far; nostackframe}
+; --------------------------------------------------------------------------
+; Retorna o Status de A20
+; --------------------------------------------------------------------------
+; Retorno: Word::
+;
+;   Hi = 0 = Ok
+;     Lo = Status
+;       0 = Desativado
+;       1 = Ativado
+;
+;   Hi = 1 = Falha
+;     Lo = Codigo de erro
+;
+;===========================================================================
+BiosInt15x2402:
+  mov ax, 0x2402  ; funcao 2402h
+
+  call near Int15$
+
+  ; verifica se erro por carrier
+  jc .error
+
+  ; verifica se erro por AH
+  cmp ah, 0
+  jne .error
+
+  ; Ok, AH = 0, AL contem o status de A20
+  jmp short .end
+
+ .error:
+  ; AH contem o codigo de erro
+  mov al, ah
+  mov ah, 1
+  ; se erro, AH = 1, AL contem o codigo de erro
+
+ .end:
+retf
+
+;===========================================================================
+; function BiosInt15x2403 : Word; external; {far; nostackframe}
+; --------------------------------------------------------------------------
+; Retorna o tipo de suporte para o A20
+; --------------------------------------------------------------------------
+; Retorno: Word::
+;
+;   Hi = 0 = Ok
+;     Lo = Suporte
+;       0 : 00 = Nenhum
+;       1 : 01 = Keyboard (8042)
+;       2 : 10 = System Control Port A (0x92)
+;       3 : 11 = Ambos
+;
+;   Hi = 1 = Falha
+;     Lo = Codigo de erro
+;
+;===========================================================================
+BiosInt15x2403:
+  mov ax, 0x2403  ; funcao 2403h
+
+  call near Int15$
+
+  ; verifica se erro por carrier
+  jc .error
+
+  ; verifica se erro por AH
+  cmp ah, 0
+  jne .error
+
+  mov ax, bx  ; coloca o retorna em AX
+  jmp short .end
+
+ .error:
+  ; AH contem o codigo de erro
+  mov al, ah
+  mov ah, 1
+  ; se erro, AH = 1, AL contem o codigo de erro
+
+ .end:
+retf
 
 ;===========================================================================
 ; function BiosInt15xE801L: Word; external; {far; nostackframe}
@@ -92,11 +254,13 @@ BiosInt15xE801:
   cmp ah, 0x80
   je .error
   jmp .end
+
  .error:
   xor ax, ax
   xor bx, bx
   xor cx, cx
   xor dx, dx
+
  .end:
 retn
 
