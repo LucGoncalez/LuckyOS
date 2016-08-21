@@ -25,8 +25,8 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos que auxiliam o boot.
 ; --------------------------------------------------------------------------
-; Versao: 0.4
-; Data: 07/04/2013
+; Versao: 0.5
+; Data: 14/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bootaux.asm
@@ -34,7 +34,7 @@
 ; Executar: Nao executavel diretamente.
 ;===========================================================================
 
-GLOBAL CopyFAR16, GoKernel16PM, GetDS, GetSS, GetSP
+GLOBAL EnableUnreal, CopyLinear, GoKernel16PM
 
 SEGMENT DATA PUBLIC
 
@@ -49,50 +49,126 @@ SEGMENT DATA PUBLIC
 SEGMENT CODE PUBLIC USE 16
 
 ;===========================================================================
-; procedure CopyFAR16(Src, Dest : DWord; Count : Word); external; {near}
+; procedure EnableUnreal(DescSeg : Word); external; {far}
 ; --------------------------------------------------------------------------
-; Copia Count bytes de Src para Dest.
+; Habilita o modo Unreal, usando o DescSeg passado.
 ;===========================================================================
-CopyFAR16:
-  ; cria a stackframe
+EnableUnreal:
+  ; cria stackframe
   push bp
   mov bp, sp
 
-  ; parametros na pilha:
-  ;
-  ; bp+10 = dword => Src
-  ; bp+6  = dword => Dest
-  ; bp+4  = word  => Count
-  ; bp+2  = retn
-  ; bp+0  = bp
-  ;
-  ; total de bytes para limpar na saida 10
+  ; Parametros na pilha
+  ; --------------------
+  ; [+6]  => W = DescSeg
+  ; ---> 2 bytes
+  ; [+4]  ...
+  ; [+2]  => D = retf
+  ; [bp]  => W = BP
 
-  ; salva registradores
+  ; salva segmentos atuais
   push ds
   push es
-  push si
-  push di
-  pushf
 
-  lds si, [bp + 10] ; carrega Src
-  les di, [bp + 6]  ; carrega Dest
-  mov cx, [bp + 4]  ; carrega Count
+  ; pega o DescSeg
+  mov bx, [bp + 6]
 
-  cld         ; zera DF = direcao flag, copia incrementando
-  rep movsb   ; executa a copia
+  ; ativa o modo protegido
+  mov eax, cr0
+  mov edx, eax  ; sera utilizado para desabilitar ;)
+  or eax, 1
+  mov cr0, eax
 
-  ; recupera registradores
-  popf
-  pop di
-  pop si
+  ; configura descritores DS e ES
+  mov ds, bx
+  mov es, bx
+
+  ; desativa o modo protegido
+  mov cr0, edx
+
+  ; reculpera segmentos antigos
   pop es
   pop ds
 
   ; limpa a stackframe
   mov sp, bp
   pop bp
-retn 10
+retf 2
+
+;===========================================================================
+; procedure CopyLinear(Src, Dest, Count : DWord); external; {far}
+; --------------------------------------------------------------------------
+; Copia Count bytes de Src para Dest.
+;===========================================================================
+CopyLinear:
+  ; cria a stackframe
+  push bp
+  mov bp, sp
+
+  ; parametros na pilha:
+  ;
+  ; +14 = dword => Src
+  ; +10 = dword => Dest
+  ; +6  = dword => Count
+  ; ------------------------------
+  ; +2  = retf
+  ; bp  = bp
+  ;
+  ; total de bytes para limpar na saida 12
+
+  ; salva registradores
+  push ds
+  push esi
+  push edi
+  pushfd
+
+  mov esi, [bp + 14]  ; carrega Src
+  mov edi, [bp + 10]  ; carrega Dest
+  mov eax, [bp + 6]   ; carrega Count
+
+  ; fazendo a copia manualmente, nao garantido que "rep movsb"
+  ;   faca isso corretamente neste modo "misto"
+
+  ; copiando blocos de 4 bytes
+  mov ecx, eax
+  shr ecx, 2  ; divide por 2^2 = 4
+  and eax, 3  ; pega o resto
+  jz .1
+  inc ecx     ; se tem resto copia mais um bloco
+ .1:
+
+  ; trabalhando com enderecos lineares, segmento igual a zero
+  xor ax, ax
+  mov ds, ax
+
+ .startcpy:
+  ; verifica se tem mais para copiar
+  cmp ecx, 0
+  je .endcpy
+
+  ;copia
+  mov eax, [esi]
+  mov [edi], eax
+
+  ; calcula indices
+  add esi, 4
+  add edi, 4
+  dec ecx
+
+  ; faz o loop
+  jmp short .startcpy
+ .endcpy:
+
+  ; recupera registradores
+  popfd
+  pop edi
+  pop esi
+  pop ds
+
+  ; limpa a stackframe
+  mov sp, bp
+  pop bp
+retf 12
 
 ;===========================================================================
 ; procedure GoKernel16(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
@@ -185,31 +261,3 @@ GoKernel16PM:
   ; salta para o kernel (atualiza CS e Entry)
   retf
 ; Fim da rotina, impossivel retornar a esse ponto...
-
-
-;===========================================================================
-; function GetDS : Word; external; {far}
-; --------------------------------------------------------------------------
-; Retorna DS
-;===========================================================================
-GetDS:
-  mov ax, ds
-retf
-
-;===========================================================================
-; function GetSS : Word; external; {far}
-; --------------------------------------------------------------------------
-; Retorna SS
-;===========================================================================
-GetSS:
-  mov ax, ss
-retf
-
-;===========================================================================
-; function GetSP : Word; external; {far}
-; --------------------------------------------------------------------------
-; Retorna SP
-;===========================================================================
-GetSP:
-  mov ax, sp
-retf

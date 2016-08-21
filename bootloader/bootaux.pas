@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos que auxiliam o boot.
   --------------------------------------------------------------------------
-  Versao: 0.4
-  Data: 07/04/2013
+  Versao: 0.5
+  Data: 14/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc bootaux.pas
@@ -40,49 +40,30 @@ interface
 
 uses Basic;
 
-procedure CopyLinear(Src, Dest, Count : DWord);
+  procedure EnableUnreal(DescSeg : Word);
+  procedure CopyLinear(Src, Dest, Count : DWord);
+  procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
 
-procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
-{Carrega e chama o kernel previamente configurado:
-
-  CS : Segmento/descritor do codigo;
-  DS : Segmento/descritor de dados;
-  ES : Segmento/descritor extra;
-  SS : Segmento/descritor da pilha;
-
-  Entry : Ponto de entrada do kernel (Offset em CS);
-  Stack : Base da pilha (Offset em SS);
-  Param : Parametro passado ao kernel em AX;
-}
-
-function GetDS : Word;
-function GetSS : Word;
-function GetSP : Word;
 
 implementation
 
 {$L BOOTAUX.OBJ}
 
 {==========================================================================}
-  procedure CopyFAR16(Src, Dest : DWord; Count : Word); external; {near;}
+  procedure EnableUnreal(DescSeg : Word); external; {far}
+{ --------------------------------------------------------------------------
+  Habilita o modo Unreal, usando o DescSeg passado.
+===========================================================================}
+
+{==========================================================================}
+  procedure CopyLinear(Src, Dest, Count : DWord); external; {far}
 { --------------------------------------------------------------------------
   Copia Count bytes de Src para Dest.
 ===========================================================================}
 
-
-{Copia Count bytes de Src para Dest, em enderecos linear}
-procedure CopyLinear(Src, Dest, Count : DWord);
-var
-  vSrc, vDest : DWord;
-
-begin
-  vSrc := PLinearToPFar16(Src);
-  vDest := PLinearToPFar16(Dest);
-  CopyFAR16(vSrc, vDest, Count);
-end;
-
 {==========================================================================}
-procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word); external; {far}
+  procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
+    external; {far}
 { --------------------------------------------------------------------------
   Configura e chama o kernel previamente carregado:
 
@@ -94,24 +75,6 @@ procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word)
     Entry : Ponto de entrada do kernel (Offset em CS);
     Stack : Base da pilha (Offset em SS);
     Param : Parametro passado ao kernel em AX;
-===========================================================================}
-
-{==========================================================================}
-function GetDS : Word; external; {far}
-{ --------------------------------------------------------------------------
-  Retorna DS
-===========================================================================}
-
-{==========================================================================}
-function GetSS : Word; external; {far}
-{ --------------------------------------------------------------------------
-  Retorna SS
-===========================================================================}
-
-{==========================================================================}
-function GetSP : Word; external; {far}
-{ --------------------------------------------------------------------------
-  Retorna SP
 ===========================================================================}
 
 end.
