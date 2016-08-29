@@ -21,7 +21,7 @@
 ; Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
 ; GNU e obtenha sua licenca: http://www.gnu.org/
 ;===========================================================================
-; pKrnl02.asm
+; pKrnl03.asm
 ; --------------------------------------------------------------------------
 ; Este arquivo eh um pequeno kernel para teste do bootloader.
 ;
@@ -31,29 +31,25 @@
 ;
 ; Ele "roda" um caracter na primeira linha, coluna 70.
 ; --------------------------------------------------------------------------
-; Versao: 0.2
+; Versao: 0.3
 ; Data: 14/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
-; > nasm -f bin -o pkrnl02.bin pkrnl02.asm
+; > nasm -f bin -o pkrnl03.bin pkrnl03.asm
 ; ------------------------------------------------------------------------
 ; Executar: Executado pelo LoadLOS.
 ;===========================================================================
 
 SECTION .text
 
-[BITS 16]
+[BITS 32]         ; 32 bits ebaaaaaaaaaaa
 
 start:
-  xor ebx, ebx    ; garante que ebx esteja zerado
-  mov bx, ax      ; recebe o segmento(16) de video em AX
-
-  ; calcura posicao real
-  shl ebx, 4      ; multiplica por 0x10
+  mov ebx, eax    ; recebe o endereco de video em EAX
   add ebx, 70*2   ; determina posicao da linha 1/coluna 70
 
   xor eax, eax
 loop:
-  mov [es:ebx], eax ; Copia o caracter+atributo para a posicao do video
+  mov [ebx], eax  ; Copia o caracter+atributo para a posicao do video
   inc eax           ; Troca caracter+atributo
   jmp short loop    ; Loop infinito

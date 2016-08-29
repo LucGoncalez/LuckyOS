@@ -25,7 +25,7 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos que auxiliam o boot.
 ; --------------------------------------------------------------------------
-; Versao: 0.5
+; Versao: 0.6
 ; Data: 14/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
@@ -34,7 +34,7 @@
 ; Executar: Nao executavel diretamente.
 ;===========================================================================
 
-GLOBAL EnableUnreal, CopyLinear, GoKernel16PM
+GLOBAL EnableUnreal, CopyLinear, GoKernel32PM
 
 SEGMENT DATA PUBLIC
 
@@ -42,8 +42,8 @@ SEGMENT DATA PUBLIC
   CSeg    RESW  1
   DSeg    RESW  1
   ESeg    RESW  1
-  Entry   RESW  1
-  Param   RESW  1
+  Entry   RESD  1
+  Param   RESD  1
 
 
 SEGMENT CODE PUBLIC USE 16
@@ -144,7 +144,7 @@ CopyLinear:
  .startcpy:
   ; verifica se tem mais para copiar
   cmp ecx, 0
-  je .endcpy
+  je .endcpy      ; se nao termina
 
   ;copia
   mov eax, [esi]
@@ -171,7 +171,7 @@ CopyLinear:
 retf 12
 
 ;===========================================================================
-; procedure GoKernel16(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
+; procedure GoKernel32PM(CS, DS, ES, SS : Word; Entry, Stack : DWord; Param : DWord);
 ;   external; {far}
 ; --------------------------------------------------------------------------
 ; Configura e chama o kernel previamente carregado:
@@ -183,43 +183,42 @@ retf 12
 ;
 ;   Entry : Ponto de entrada do kernel (Offset em CS);
 ;   Stack : Base da pilha (Offset em SS);
-;   Param : Parametro passado ao kernel em AX;
+;   Param : Parametro passado ao kernel em EAX;
 ;===========================================================================
-GoKernel16PM:
+GoKernel32PM:
   ; cria stackframe
   push bp
   mov bp, sp
 
   ; Parametros na pilha
   ; --------------------
-  ; [+18] => W = CS
-  ; [+16] => W = DS
-  ; [+14] => W = ES
-  ; [+12] => W = SS
-  ; [+10] => W = Entry
-  ; [+8]  => W = Stack
-  ; [+6]  => W = Param
-  ; ---> 14 bytes
+  ; [+24] => W = CS
+  ; [+22] => W = DS
+  ; [+20] => W = ES
+  ; [+18] => W = SS
+  ; [+14] => D = Entry
+  ; [+10] => D = Stack
+  ; [+6]  => D = Param
+  ; ---> 20 bytes
   ; [+4]  ...
   ; [+2]  => D = retf
   ; [bp]  => W = BP
 
-
   ; salva valores em variaveis no segmento de dados
-  mov ax, [bp + 18] ; CS
+  mov ax, [bp + 24] ; CS
   mov [CSeg], ax
 
-  mov ax, [bp + 16] ; DS
+  mov ax, [bp + 22] ; DS
   mov [DSeg], ax
 
-  mov ax, [bp + 14] ; ES
+  mov ax, [bp + 20] ; ES
   mov [ESeg], ax
 
-  mov ax, [bp + 10] ; Entry
-  mov [Entry], ax
+  mov eax, [bp + 14]  ; Entry
+  mov [Entry], eax
 
-  mov ax, [bp + 6]  ; Param
-  mov [Param], ax
+  mov eax, [bp + 6] ; Param
+  mov [Param], eax
 
   ; ativa o modo protegido
   mov eax, cr0
@@ -227,22 +226,22 @@ GoKernel16PM:
   mov cr0, eax
 
   ; configura nova pilha
-  mov dx, [bp + 12] ; pega SS
-  mov ax, [bp + 8]  ; pega SP (Stack)
+  mov dx, [bp + 18]   ; pega SS
+  mov eax, [bp + 10]  ; pega SP (Stack)
 
-  mov ss, dx  ; atualiza o segmento da pilha
-  mov sp, ax  ; atualiza ponteiro do topo da pilha
-  mov bp, ax  ; atualiza ponteiro da base da pilha
+  mov ss, dx    ; atualiza o segmento da pilha
+  mov esp, eax  ; atualiza ponteiro do topo da pilha
+  mov ebp, eax  ; atualiza ponteiro da base da pilha
 
-  xor ax, ax
-  mov [bp], ax    ; grava elemento nulo no comeco da pilha
+  xor eax, eax
+  mov [ebp], eax  ; grava elemento nulo no comeco da pilha
 
-  ; cria endereco do salto
+  ; coloca endereco do salto na pilha
   mov ax, [CSeg]
   push ax
 
-  mov ax, [Entry]
-  push ax
+  mov eax, [Entry]
+  push eax
 
   ; coloca valores de DS e ES na pilha
   mov ax, [DSeg]
@@ -252,12 +251,15 @@ GoKernel16PM:
   push ax
 
   ; pega parametro
-  mov ax, [Param]
+  mov eax, [Param]
 
   ; atualiza segmentos de dados
   pop es
   pop ds
 
+  mov ebx, esp  ; poe o ponteiro para o salto em EBX (EAX contem parametro)
+  mov esp, ebp  ; limpa o ponteiro da pilha (mantem valores la...)
+
   ; salta para o kernel (atualiza CS e Entry)
-  retf
+  jmp dword far [ebx]
 ; Fim da rotina, impossivel retornar a esse ponto...
