@@ -26,7 +26,7 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.9
+  Versao: 0.10
   Data: 14/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
@@ -50,13 +50,14 @@ uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux, PM,
 const
   cCPUMin = CT80386;
   cCPUMax = CT80586;
-  cHighMemoryMin = 2048; {2M}
+  cHighMemoryMin = 1024; {1M}
 
-  cKernelName = 'pkrnl02.bin';
+  cKernelName = 'pkrnl03.bin';
   cMaxBuffer = $FFF0;
 
-  cExecEntry = $00220000; {2M +128K}
-  cMaxExecSpace = $FFFF;
+  cExecEntry    = $00100000; {1M}
+  cStack        = $001FFFFC;
+  cMaxExecSpace = $00080000; {500K}
 
 
 {Variaveis globais}
@@ -712,7 +713,7 @@ end;
 {Chama o kernel}
 procedure ExecKernel;
 var
-  GDT : array[0..4] of TDescrSeg;
+  GDT : array[0..3] of TDescrSeg;
   GDTR : TGdtR;
 
   Base : DWord;
@@ -727,16 +728,16 @@ var
   vES : Word;
   VSS : Word;
 
-  vEntry : Word;
-  vStack : Word;
-  vParam : Word;
+  vEntry : DWord;
+  vStack : DWord;
+  vParam : DWord;
 
 
   procedure DoSetup(Entrada : Byte);
   begin
     SetupGDT(GDT[Entrada], Base, Limite, ACS, ATR);
 
-    Writeln('0x', ByteToHex(Entrada*8),
+    Writeln('0x', ByteToHex(Entrada shl 3),
       ' => Base: ', DWordToHex2(Base),
       '  Limite: ', DWordToHex2(Limite),
       '  ACS: ', ByteToHex(ACS),
@@ -756,33 +757,22 @@ begin
   ATR := 0;
   DoSetup(0);
 
+  {todos os descritores usam as mesmas definicoes}
+  Base := $0;
+  Limite := $FFFFF;
+  ATR := ATR_FLAT32;
+
   {0x08 -- descritor do segmento de codigo, kernel}
-  Base := vExecLinear;
-  Limite := $FFFF;
   ACS := ACS_CODE;
-  ATR := ATR_REALM;
   DoSetup(1);
 
   {0x10 -- descritor do segmento de dados}
-  Base := $00210000; {2M + 64K}
-  Limite := $FFFF;
   ACS := ACS_DATA;
-  ATR := ATR_REALM;
   DoSetup(2);
 
   {0x18 -- descritor do segmento de pilha}
-  Base := $00200000; {na marca do 2M}
-  Limite := $FFFF;
   ACS := ACS_STACK;
-  ATR := ATR_REALM;
   DoSetup(3);
-
-  {0x20 -- descritor para flat32}
-  Base := $0;
-  Limite := $FFFFF;
-  ACS := ACS_DATA;
-  ATR := ATR_FLAT32;
-  DoSetup(4);
 
   {setando o registrador GDTR}
 
@@ -802,15 +792,19 @@ begin
 
   {prepara parametros para a chamada do kernel}
   vCS := $08; {descritor para o segmento de codigo}
-  vEntry := 0;
+  vEntry := cExecEntry;
 
   vDS := $10; {descritor para o segmento de dados}
-  vES := $20; {descritor para o segmento flat32}
+  vES := $10;
 
   vSS := $18; {descritor para o segmento de pilha}
-  vStack := $FFFE; {64k}
+  vStack := cStack;
 
-  vParam := vCRTSeg; {segmento de video}
+  {segmento de video}
+  PTemp.Seg := vCRTSeg;
+  PTemp.Ofs := 0;
+  {convertendo o endereco linear para DWord}
+  vParam := PFar16ToPLinear(PTemp);
 
   Writeln;
   Writeln('Ambiente de execucao:');
@@ -818,11 +812,11 @@ begin
   Writeln('DS: ', WordToHex(vDS));
   Writeln('ES: ', WordToHex(vES));
   Writeln('SS: ', WordToHex(vSS));
-  Writeln('Entry: ', WordToHex(vEntry));
-  Writeln('Stack: ', WordToHex(vStack));
-  Writeln('Param: ', WordToHex(vParam));
+  Writeln('Entry: ', DWordToHex2(vEntry));
+  Writeln('Stack: ', DWordToHex2(vStack));
+  Writeln('Param: ', DWordToHex2(vParam));
   Writeln;
-  Writeln('Executando kernel em 0x', DWordToHex2(vExecLinear));
+  Writeln('Executando kernel em 0x', DWordToHex2(vEntry));
 
   {desabilita as interrupcoes para que as IRQs nao causem excecoes}
   DisableInt;
@@ -831,7 +825,7 @@ begin
   DisableNMIs;
 
   {Vai para o modo protegido chamando o kernel}
-  GoKernel16PM(vCS, vDS, vES, vSS, vEntry, vStack, vParam);
+  GoKernel32PM(vCS, vDS, vES, vSS, vEntry, vStack, vParam);
 
   {Impossivel o retorno a esse ponto pelo kernel}
 end;
@@ -866,9 +860,6 @@ begin
   {habilita Unreal Mode}
   StartUnReal;
 
-  {cria o espaco de execucao}
-  {MakeExecSpace;}
-
   {define o ponto de carregamento}
   vExecLinear := cExecEntry;
   vExecSize := cMaxExecSpace;
@@ -885,6 +876,4 @@ begin
 
   {chama o kernel}
   ExecKernel;
-
-  Finish;
 end.
