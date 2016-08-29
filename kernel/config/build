@@ -27,8 +27,8 @@
 #   Arquivo de shell scritp que tem por funcao compilar e criar a imagem do
 # kernel em uma unica operacao.
 # --------------------------------------------------------------------------
-# Versao: 0.0
-# Data: 28/04/2013
+# Versao: 0.1
+# Data: 29/04/2013
 # --------------------------------------------------------------------------
 # Executar: Executado em um terminal
 # > ./build
@@ -36,10 +36,22 @@
 
 # Variaveis usadas como filtros
 finalfiles="*.bin *.map"
-objfiles="*.o"
+objfiles="*.o *.ppu"
 
 # Lista de arquivos usado pelo ld
-inputfiles=""
+inputfiles="kernel.o system.o"
+
+# Variaveis usadas no FPC
+fpcName="ppc386"
+fpcOptions="-n @fpc.cfg -Xd -Aelf -Tlinux"
+
+# Opcoes
+#
+# -n        - ignora arquivo de configuracao padrao
+# @fpc.cfg  - informa um arquivo de configuracao
+# -Xd       - ignora bibliotecas padrao (crosscompiler!)
+# -Aelf     - forca a sempre criar arquivos objetos formato elf
+# -Tlinux   - compila formato para linux (mais limpo)
 
 # Variavel que contem o status de erro
 error="false"
@@ -75,7 +87,21 @@ do
   fi
 done < <(ls -1 *.asm )
 
-# Arquivos em Pascal vao aqui
+# Compilando kernel em Pascal
+echo -en "\n+ Compilando Kernel em Pascal... "
+
+if ! $error ; then
+  messageErro=$($fpcName $fpcOptions kernel.pas)
+
+    if [ $? -eq 0 ] ; then
+      echo "OK"
+
+      echo -e "$messageErro"
+    else
+      error="true"
+      echo -e "FALHA"
+    fi
+fi
 
 # Linkando o kernel para binario, cria o mapfile
 if ! $error ; then
@@ -93,13 +119,17 @@ fi
 
 # Efetua limpeza no diretorio
 if ! $error ; then
-  echo -e "\n+ Limpando diretorio...\n"
+  if [ "$1" = "-k" ] ; then
+    echo -e "\n! Mantendo arquivos intermediarios."
+  else
+    echo -e "\n+ Limpando diretorio...\n"
 
-  while read file
-  do
-    echo "  Apagando arquivo '$file'"
-    rm "$file"
-  done < <(ls -1 $objfiles 2> /dev/null)
+    while read file
+    do
+      echo "  Apagando arquivo '$file'"
+      rm "$file"
+    done < <(ls -1 $objfiles 2> /dev/null)
+  fi
 fi
 
 if $error ; then
