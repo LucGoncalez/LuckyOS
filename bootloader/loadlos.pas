@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.10
-  Data: 14/04/2013
+  Versao: 0.11
+  Data: 18/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -76,6 +76,9 @@ var
 
   vExecSize : DWord;
   vExecLinear : DWord;
+
+  GDT : array[0..3] of TDescrSeg;
+  GDTR : TGdtR;
 
 
 {Verifica a CPU}
@@ -587,34 +590,75 @@ begin
   end;
 end;
 
-{Habilita o Modo Unreal}
-procedure StartUnReal;
+{Configura a GDT}
+procedure ConfigGDT;
 var
+  Base : DWord;
+  Limite : DWord;
+  ACS : Byte;
+  ATR : Byte;
+
   PTemp : TPointerFar16;
-  GDT : array[0..1] of TDescrSeg;
-  GDTR : TGdtR;
+
+  procedure DoSetup(Entrada : Byte);
+  begin
+    SetupGDT(GDT[Entrada], Base, Limite, ACS, ATR);
+
+    Writeln('0x', ByteToHex(Entrada shl 3),
+      ' => Base: ', DWordToHex2(Base),
+      '  Limite: ', DWordToHex2(Limite),
+      '  ACS: ', ByteToHex(ACS),
+      '  ATR: ', ByteToHex(ATR));
+  end;
 
 begin
-  Write('Configurando o UnReal Mode... ');
+  Writeln('Configurando GDT... ');
+  Writeln;
 
   {cria GDT, configura}
 
   {0x00 -- descritor nulo}
-  SetupGDT(GDT[0], 0, 0, 0, 0);
-  {0x08 -- descritor do segmento de dados}
-  SetupGDT(GDT[1], 0, $FFFFF, ACS_DATA, ATR_FLAT32);
+  Base := 0;
+  Limite := 0;
+  ACS := 0;
+  ATR := 0;
+  DoSetup(0);
+
+  {todos os descritores usam as mesmas definicoes}
+  Base := $0;
+  Limite := $FFFFF;
+  ATR := ATR_FLAT32;
+
+  {0x08 -- descritor do segmento de codigo, kernel}
+  ACS := ACS_CODE;
+  DoSetup(1);
+
+  {0x10 -- descritor do segmento de dados}
+  ACS := ACS_DATA;
+  DoSetup(2);
+
+  {0x18 -- descritor do segmento de pilha}
+  ACS := ACS_STACK;
+  DoSetup(3);
 
   {setando o registrador GDTR}
 
   {pegando o endereco da GDT}
   PTemp.Seg := Seg(GDT);
   PTemp.Ofs := Ofs(GDT);
-
   {convertendo o endereco linear para DWord}
-  GDTR.Base  := PFar16ToPLinear(PTemp);
+  Base := PFar16ToPLinear(PTemp);
+
+  GDTR.Base  := Base;
   GDTR.Limit := SizeOf(GDT) - 1;
 
   LoadGDT(@GDTR);
+end;
+
+{Habilita o Modo Unreal}
+procedure StartUnReal(DescFlat : Word);
+begin
+  Write('Configurando o UnReal Mode... ');
 
   {desabilita as interrupcoes para que as IRQs nao causem excecoes}
   DisableInt;
@@ -623,7 +667,7 @@ begin
   DisableNMIs;
 
   {chama o procedimento para habilitar o Unreal}
-  EnableUnreal($08);
+  EnableUnreal(DescFlat);
 
   {habilita as NMIs}
   EnableNMIs;
@@ -713,16 +757,6 @@ end;
 {Chama o kernel}
 procedure ExecKernel;
 var
-  GDT : array[0..3] of TDescrSeg;
-  GDTR : TGdtR;
-
-  Base : DWord;
-  Limite : DWord;
-  ACS : Byte;
-  ATR : Byte;
-
-  PTemp : TPointerFar16;
-
   vCS : Word;
   vDS : Word;
   vES : Word;
@@ -732,64 +766,9 @@ var
   vStack : DWord;
   vParam : DWord;
 
-
-  procedure DoSetup(Entrada : Byte);
-  begin
-    SetupGDT(GDT[Entrada], Base, Limite, ACS, ATR);
-
-    Writeln('0x', ByteToHex(Entrada shl 3),
-      ' => Base: ', DWordToHex2(Base),
-      '  Limite: ', DWordToHex2(Limite),
-      '  ACS: ', ByteToHex(ACS),
-      '  ATR: ', ByteToHex(ATR));
-  end;
+  PTemp : TPointerFar16;
 
 begin
-  Writeln('Configurando GDT... ');
-  Writeln;
-
-  {cria GDT, configura}
-
-  {0x00 -- descritor nulo}
-  Base := 0;
-  Limite := 0;
-  ACS := 0;
-  ATR := 0;
-  DoSetup(0);
-
-  {todos os descritores usam as mesmas definicoes}
-  Base := $0;
-  Limite := $FFFFF;
-  ATR := ATR_FLAT32;
-
-  {0x08 -- descritor do segmento de codigo, kernel}
-  ACS := ACS_CODE;
-  DoSetup(1);
-
-  {0x10 -- descritor do segmento de dados}
-  ACS := ACS_DATA;
-  DoSetup(2);
-
-  {0x18 -- descritor do segmento de pilha}
-  ACS := ACS_STACK;
-  DoSetup(3);
-
-  {setando o registrador GDTR}
-
-  {pegando o endereco da GDT}
-  PTemp.Seg := Seg(GDT);
-  PTemp.Ofs := Ofs(GDT);
-  {convertendo o endereco linear para DWord}
-  Base := PFar16ToPLinear(PTemp);
-
-  GDTR.Base  := Base;
-  GDTR.Limit := SizeOf(GDT) - 1;
-
-  LoadGDT(@GDTR);
-
-  Writeln;
-  Writeln('Configurado!');
-
   {prepara parametros para a chamada do kernel}
   vCS := $08; {descritor para o segmento de codigo}
   vEntry := cExecEntry;
@@ -857,22 +836,26 @@ begin
   EnableA20;
   Writeln;
 
-  {habilita Unreal Mode}
-  StartUnReal;
-
   {define o ponto de carregamento}
   vExecLinear := cExecEntry;
   vExecSize := cMaxExecSpace;
+
+  {configura a GDT}
+  ConfigGDT;
+  Writeln;
+
+  {habilita Unreal Mode}
+  StartUnReal($10);
+  Writeln;
+
+  Write('Pressione qualquer tecla para continuar... ');
+  vKey := ReadKey;
+  ClrScr;
 
   {carrega o kernel}
   Writeln;
   Writeln('Imagem do kernel: ', cKernelName);
   LoadKernel;
-
-  Write('Pressione qualquer tecla para continuar... ');
-  vKey := ReadKey;
-  Writeln;
-  Writeln;
 
   {chama o kernel}
   ExecKernel;
