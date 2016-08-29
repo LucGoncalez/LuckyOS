@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.14
-  Data: 23/04/2013
+  Versao: 0.14.1
+  Data: 27/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -462,7 +462,7 @@ begin
 
   { *** calculando posicao do bloco de codigo *** }
   vCodeIni := vEntryPoint shr vMemAlign;
-  vCodeEnd := (vEntryPoint + vKernelSize) shr vMemAlign;
+  vCodeEnd := (vEntryPoint + vKernelSize - 1) shr vMemAlign;
   vCodeSize := vCodeEnd - vCodeIni + 1;
 
   if vDebug then
