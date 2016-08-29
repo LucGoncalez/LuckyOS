@@ -21,21 +21,17 @@
 ; Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
 ; GNU e obtenha sua licenca: http://www.gnu.org/
 ;===========================================================================
-; pKrnl05.asm
+; kernel.asm
 ; --------------------------------------------------------------------------
 ; Este arquivo eh um pequeno kernel para teste do bootloader.
 ;
-; Este pico-kernel foi feito para rodar tanto no modo real quanto no modo
-; protegido de 16 bits, o segmento de video eh passado pelo registrador AX
-; que tanto pode ser o segmento quanto o descritor da GDT.
-;
 ; Ele "roda" um caracter na primeira linha, coluna 70.
 ; --------------------------------------------------------------------------
-; Versao: 0.5
-; Data: 21/04/2013
+; Versao: 0.0 (pkernel v0.6)
+; Data: 23/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
-; > nasm -f bin -o pkrnl05.bin pkrnl05.asm
+; > nasm -f bin -o kernel.bin kernel.asm
 ; ------------------------------------------------------------------------
 ; Executar: Executado pelo LoadLOS.
 ;===========================================================================
@@ -66,15 +62,15 @@
   CPUMin      EQU 3           ; 80386
   MemAlign    EQU 12          ; 2^12 = 4K
   EntryPoint  EQU 0x00100000  ; 1M
-  StackSize   EQU 0x00010000  ; 64K
-  HeapSize    EQU 0x00008000  ; 4K
+  StackSize   EQU 0x00000000  ; Extensivel
+  HeapSize    EQU 0x00000000  ; Extensivel
 
 ; constante
   AddrVideoSeg  EQU 23
 
 SECTION .text
 
-[BITS 32]         ; 32 bits ebaaaaaaaaaaa
+[BITS 32]
 
 [ORG EntryPoint]  ; onde o kernel deve ser carregado
 start:
