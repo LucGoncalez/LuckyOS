@@ -21,7 +21,7 @@
 ; Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
 ; GNU e obtenha sua licenca: http://www.gnu.org/
 ;===========================================================================
-; pKrnl03.asm
+; pKrnl04.asm
 ; --------------------------------------------------------------------------
 ; Este arquivo eh um pequeno kernel para teste do bootloader.
 ;
@@ -31,20 +31,67 @@
 ;
 ; Ele "roda" um caracter na primeira linha, coluna 70.
 ; --------------------------------------------------------------------------
-; Versao: 0.3
-; Data: 14/04/2013
+; Versao: 0.4
+; Data: 19/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
-; > nasm -f bin -o pkrnl03.bin pkrnl03.asm
+; > nasm -f bin -o pkrnl04.bin pkrnl04.asm
 ; ------------------------------------------------------------------------
 ; Executar: Executado pelo LoadLOS.
 ;===========================================================================
+
+;   Um ponto chave aqui é criar uma tabela de boot fornecidada pelo kernel
+; que de informacoes ao bootloader de como o kernel quer ser carregado e
+; configurado.
+;
+;   Esta tabela precisa ter uma assinatura, e um numero de versao, para que
+; o bootloader obtenha informaçoes corretas.
+;
+;   O que o kernel precisa para trabalhar:
+;
+;   - Um minimo de processador
+;   - Um posicao especifica na memoria
+;   - Uma quantidade minima de pilha
+;   - Uma quantidade minima de memoria de alocacao - heap
+;
+;   Como a quantidade de memória agora está dividida, cabe ao bootloader
+; calcular a memoria minima necessaria.
+;
+;   Outra coisa que pode ser bem util e o alinhamento da memoria
+;
+
+; [map all kernel.map] <- usado para debug
+
+; configuracao do kernel
+  CPUMin      EQU 3           ; 80386
+  MemAlign    EQU 12          ; 2^12 = 4K
+  EntryPoint  EQU 0x00100000  ; 1M
+  StackSize   EQU 0x00010000  ; 64K
+  HeapSize    EQU 0x00008000  ; 4K
 
 SECTION .text
 
 [BITS 32]         ; 32 bits ebaaaaaaaaaaa
 
+[ORG EntryPoint]  ; onde o kernel deve ser carregado
 start:
+  jmp near kstart
+
+  ; *** Tabela de dados do kernel usada no boot
+  ; IMPORTANTE: nao altere, use as constantes de cofiguracao acima
+  KT:       ; kernel table
+  .LOS_Sign   DB  'LOS', 0    ; 4 B
+  .KT_Sign    DB  'BKT', 0    ; 4 B
+  .Version    DB  1           ; 1 B
+  .CPUMin     DB  CPUMin      ; 1 B
+  .MemAlign   DB  MemAlign    ; 1 B
+  .EntryPoint DD  EntryPoint  ; 4 B
+  .StackSize  DD  StackSize   ; 4 B
+  .HeapSize   DD  HeapSize    ; 4 B
+  ; total 23 bytes
+  ; *** Tabela de dados do kernel usada no boot
+
+kstart:
   mov ebx, eax    ; recebe o endereco de video em EAX
   add ebx, 70*2   ; determina posicao da linha 1/coluna 70
 
