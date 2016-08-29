@@ -26,7 +26,7 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.12
+  Versao: 0.13
   Data: 21/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
@@ -42,12 +42,12 @@
 
 program LoadLOS;
 
-uses CopyRigh, Basic, CPUInfo, MemInfo, CRTInfo, EStrings, BootKT, A20,
-  Intrpts, BootAux, PM, CRT;
+uses CopyRigh, Basic, CPUInfo, MemInfo, CRTInfo, EStrings, BootKT, BootBT,
+  A20, Intrpts, BootAux,  PM, CRT;
 
 {Constantes gerais}
 const
-  cKernelName = 'pkrnl04.bin';
+  cKernelName = 'pkrnl05.bin';
   cCPUMin = CT80386;  {minimo para o boot}
   cCPUMax = CT80586;  {maximo detectavel}
   cHighMemoryMin = 1024; {1M}
@@ -80,6 +80,9 @@ var
   vStackDesc : Word;
   {calculado}
   vStackStart : DWord;
+  vHeapStart : DWord;
+  {passado ao kernel}
+  vBootTable : TBootTable;
 
 
 {Usado internamente}
@@ -300,7 +303,6 @@ var
   vStackEnd : DWord;
 
   vHeapBSize : DWord;
-  vHeapStart : DWord;
   vHeapIni : DWord;
   vHeapEnd : DWord;
 
@@ -394,6 +396,7 @@ begin
   end;
 
   vStackStart := ((vStackEnd + 1) shl vMemAlign) - 4;
+  vStackSize := (vStackEnd - vStackIni + 1) shl vMemAlign;
   Writeln(' - Inicio:  0x', DWordToHex2(vStackStart));
 
   {calculando memoria livre}
@@ -432,6 +435,7 @@ begin
     end;
 
     vHeapStart := vHeapIni shl vMemAlign;
+    vHeapSize := (vHeapEnd - vHeapIni + 1) shl vMemAlign;
     Writeln(' - Inicio:  0x', DWordToHex2(vHeapStart));
 
     {calculando memoria livre}
@@ -1028,6 +1032,32 @@ begin
   Close(vKernel);
 end;
 
+{Configura a tabela de boot passada ao kernel}
+procedure ConfigBootTable;
+begin
+  {assinatura da tabela}
+  vBootTable.LOSSign := cLOSSign;
+  vBootTable.BTSign := CBTSign;
+  {dados}
+  vBootTable.CPULevel := Byte(vCPUType);
+  vBootTable.LowMemory := vLowMemory;
+  vBootTable.HighMemory := vHighMemory;
+  vBootTable.CRTInfo := vCRTInfo;
+  vBootTable.CRTRows := vCRTRows;
+  vBootTable.CRTCols := vCRTCols;
+  vBootTable.CRTPort := vCRTPort;
+  vBootTable.CRTSeg := vCRTSeg;
+  vBootTable.A20KBC := vA20KBC;
+  vBootTable.A20Bios := vA20Bios;
+  vBootTable.A20Fast := vA20Fast;
+  vBootTable.CodeIni := vEntryPoint;
+  vBootTable.CodeEnd := vEntryPoint + vKernelSize - 1;
+  vBootTable.StackIni := vStackStart + 3;
+  vBootTable.StackEnd := vStackStart - vStackSize + 4;
+  vBootTable.HeapIni := vHeapStart;
+  vBootTable.HeapEnd := vHeapStart + vHeapSize - 1;
+end;
+
 {Chama o kernel}
 procedure ExecKernel;
 var
@@ -1053,10 +1083,8 @@ begin
   vSS := vStackDesc;
   vStack := vStackStart;
 
-  {segmento de video}
-  PTemp.Seg := vCRTSeg;
-  PTemp.Ofs := 0;
-  {convertendo o endereco linear para DWord}
+  {convertendo o endereco da tabela de boot}
+  Pointer(PTemp) := @vBootTable;
   vParam := PFar16ToPLinear(PTemp);
 
   Writeln;
@@ -1131,6 +1159,35 @@ begin
   {carrega o kernel}
   Writeln;
   LoadKernel;
+
+  {configura a tabela de boot}
+  ConfigBootTable;
+
+  {informacoes sobre a tabela de boot}
+  WaitKey;
+  Writeln;
+  Writeln('Tabela de boot:');
+  Writeln;
+  Writeln('CPULevel: ', vBootTable.CPULevel);
+  Writeln('LowMemory: ', vBootTable.LowMemory);
+  Writeln('HighMemory: ', vBootTable.HighMemory);
+  Writeln('CRTInfo: 0x', WordToHex(vBootTable.CRTInfo));
+  Writeln('CRTRows: ', vBootTable.CRTRows);
+  Writeln('CRTCols; ', vBootTable.CRTCols);
+  Writeln('CRTPort; 0x', WordToHex(vBootTable.CRTPort));
+  Writeln('CRTSeg: 0x', WordToHex(vBootTable.CRTSeg));
+  Writeln('A20KBC: ', vBootTable.A20KBC);
+  Writeln('A20Bios: ', vBootTable.A20Bios);
+  Writeln('A20Fast: ', vBootTable.A20Fast);
+  Writeln('CodeIni: 0x', DWordToHex2(vBootTable.CodeIni));
+  Writeln('CodeEnd: 0x', DWordToHex2(vBootTable.CodeEnd));
+  Writeln('StackIni: 0x', DWordToHex2(vBootTable.StackIni));
+  Writeln('StackEnd: 0x', DWordToHex2(vBootTable.StackEnd));
+  Writeln('HeapIni: 0x', DWordToHex2(vBootTable.HeapIni));
+  Writeln('HeapEnd: 0x', DWordToHex2(vBootTable.HeapEnd));
+  Writeln;
+  Writeln('Para debug => Ofset do CRTSeg: ', Ofs(vBootTable.CRTSeg) - Ofs(vBootTable));
+  WaitKey;
 
   {chama o kernel}
   ExecKernel;
