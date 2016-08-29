@@ -25,7 +25,7 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos que auxiliam o boot.
   --------------------------------------------------------------------------
-  Versao: 0.5
+  Versao: 0.6
   Data: 14/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
@@ -42,7 +42,7 @@ uses Basic;
 
   procedure EnableUnreal(DescSeg : Word);
   procedure CopyLinear(Src, Dest, Count : DWord);
-  procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
+  procedure GoKernel32PM(CS, DS, ES, SS : Word; Entry, Stack : DWord; Param : DWord);
 
 
 implementation
@@ -62,7 +62,7 @@ implementation
 ===========================================================================}
 
 {==========================================================================}
-  procedure GoKernel16PM(CS, DS, ES, SS : Word; Entry, Stack : Word; Param : Word);
+  procedure GoKernel32PM(CS, DS, ES, SS : Word; Entry, Stack : DWord; Param : DWord);
     external; {far}
 { --------------------------------------------------------------------------
   Configura e chama o kernel previamente carregado:
@@ -74,7 +74,7 @@ implementation
 
     Entry : Ponto de entrada do kernel (Offset em CS);
     Stack : Base da pilha (Offset em SS);
-    Param : Parametro passado ao kernel em AX;
+    Param : Parametro passado ao kernel em EAX;
 ===========================================================================}
 
 end.
