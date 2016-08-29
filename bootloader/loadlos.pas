@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.11
-  Data: 18/04/2013
+  Versao: 0.12
+  Data: 21/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -42,63 +42,90 @@
 
 program LoadLOS;
 
-uses CopyRigh, CPUInfo, MemInfo, CRTInfo, Basic, EStrings, BootAux, PM,
-  Intrpts, CRT, A20;
-
+uses CopyRigh, Basic, CPUInfo, MemInfo, CRTInfo, EStrings, BootKT, A20,
+  Intrpts, BootAux, PM, CRT;
 
 {Constantes gerais}
 const
-  cCPUMin = CT80386;
-  cCPUMax = CT80586;
+  cKernelName = 'pkrnl04.bin';
+  cCPUMin = CT80386;  {minimo para o boot}
+  cCPUMax = CT80586;  {maximo detectavel}
   cHighMemoryMin = 1024; {1M}
-
-  cKernelName = 'pkrnl03.bin';
   cMaxBuffer = $FFF0;
-
-  cExecEntry    = $00100000; {1M}
-  cStack        = $001FFFFC;
-  cMaxExecSpace = $00080000; {500K}
-
 
 {Variaveis globais}
 var
+  {detectado}
+  vKernelSize : DWord;
   vCPUType :TCPUType;
   vLowMemory : DWord;
   vHighMemory : DWord;
-
   vCRTInfo : Word;
   vCRTRows, vCRTCols : Byte;
   vCRTPort, vCRTSeg : Word;
-
   vA20Bios : Boolean;
   vA20KBC : Boolean;
   vA20Fast : Boolean;
-
-  vExecSize : DWord;
-  vExecLinear : DWord;
-
+  {fornecido pelo kernel}
+  vCPUMin : TCPUType;
+  vMemAlign : Byte;
+  vEntryPoint : DWord;
+  vStackSize : DWord;
+  vHeapSize : DWord;
+  {estrutural}
   GDT : array[0..3] of TDescrSeg;
   GDTR : TGdtR;
+  vCodeDesc : Word;
+  vDataDesc : Word;
+  vStackDesc : Word;
+  {calculado}
+  vStackStart : DWord;
+
+
+{Usado internamente}
+function CPUType2Str(CPUType : TCPUType) : String;
+begin
+  CPUType2Str := '';
+
+  case CPUType of
+    CT8086  : CPUType2Str := '8086';
+    CT80186 : CPUType2Str := '80186';
+    CT80286 : CPUType2Str := '80286';
+    CT80386 : CPUType2Str := '80386';
+    CT80486 : CPUType2Str := '80486';
+    CT80586 : CPUType2Str := '80586';
+  end;
+end;
+
+{Usado internamente}
+procedure WaitKey;
+var
+  vKey : Char;
+
+begin
+  Writeln;
+  Write('Pressione qualquer tecla para continuar... ');
+  vKey := ReadKey;
+  ClrScr;
+end;
 
 
 {Verifica a CPU}
 procedure TestCPU;
+var
+  vTemp : String;
+
 begin
   DetectCPU;
   {armazena o tipo da CPU em uma variavel global}
   vCPUType := GetCPUType;
 
   {mostra informacoes da CPU}
-  case vCPUType of
-    CT8086  : Writeln('CPU 8086 detectado');
-    CT80186 : Writeln('CPU 80186 detectado');
-    CT80286 : Writeln('CPU 80286 detectado');
-    CT80386 : Writeln('CPU 80386 detectado');
-    CT80486 : Writeln('CPU 80486 detectado');
-    CT80586 : Writeln('CPU 80586 detectado');
+  vTemp := CPUType2Str(vCPUType);
+  if (vTemp <> '') then
+    Writeln('CPU ', vTemp, ' detectado')
   else
-    Writeln('CPU Desconhecido...');
-  end;
+    Writeln('CPU desconhecido...');
 
   {verifica o tipo da CPU}
   if (vCPUType < cCPUMin) or (vCPUType > cCPUMax) then
@@ -177,6 +204,254 @@ begin
     Writeln('Falha na deteccao do video. Abortando!');
     Finish;
   end;
+end;
+
+{Obtem parametros da imagem do kernel}
+procedure GetKernelParam;
+var
+  vKernel : File;
+  vTeste : Boolean;
+  vKernelTable : TKernelTable;
+
+begin
+  {abre arquivo de kernel}
+  Assign(vKernel, cKernelName);
+  Reset(vKernel, 1);
+
+  vKernelSize := FileSize(vKernel);
+
+  {verifica se o arquivo contem um cabecalho valido}
+  Write('Verificando cabecalho... ');
+
+  vTeste := (vKernelSize >= SizeOf(TKernelTable));
+
+  if vTeste then
+  begin
+    {se o arquivo tem tamanho para conter uma tabela, le a tabela...}
+    BlockRead(vKernel, vKernelTable, SizeOf(TKernelTable));
+
+    {verifica se tem o jmp inicial}
+    vTeste := (vKernelTable.JumpInst = $E9);
+  end;
+
+  if vTeste then
+  begin
+    {se jmp ok, verifica assinatura}
+    vTeste := (vKernelTable.LOS_Sign = cLOS_Sign) and (vKernelTable.KT_Sign = cKT_Sign);
+  end;
+
+  if vTeste then
+  begin
+    {se assinaturas ok, verifica versao da tabela}
+    vTeste := (vKernelTable.KT_Vers = 1);
+  end;
+
+  {se falha no cabecalho, termina}
+  if not vTeste then
+  begin
+    Writeln('FALHA');
+    Writeln('Imagem de kernel invalida. Abortando!');
+    Finish;
+  end
+  else
+    Writeln('OK');
+
+  {cabecalho ok, pegando informacoes}
+  vCPUMin := TCPUType(vKernelTable.CPU_Min);
+  vMemAlign := vKernelTable.MemAlign;
+  vEntryPoint := vKernelTable.EntryPoint;
+  vStackSize := vKernelTable.StackSize;
+  vHeapSize := vKernelTable.HeapSize;
+
+  Writeln;
+  Writeln('Parametros do kernel:');
+
+  {mostra valores, util para debug}
+  Writeln;
+  Writeln('CPU Minimal:  ', CPUType2Str(vCPUMin));
+  Writeln('Memory Align: ', vMemAlign);
+  Writeln('Entry Point:  0x', DWordToHex2(vEntryPoint));
+  Writeln('Stack Size:   0x', DWordToHex2(vStackSize));
+  Writeln('Heap Size:    0x', DWordToHex2(vHeapSize));
+
+  {fecha arquivo do kernel}
+  Close(vKernel);
+end;
+
+{Verifica se parametros sao correspondidos}
+procedure CheckParam;
+var
+  vBlockSize : DWord;
+
+  vHighMemoryIni : DWord;
+  vHighMemoryEnd : DWord;
+  vHighMemoryBSize : DWord;
+
+  vFreeMemIni : DWord;
+  vFreeMemEnd : DWord;
+
+  vCodeIni : DWord;
+  vCodeEnd : DWord;
+  vCodeSize : DWord;
+
+  vStackHigh : Boolean;
+  vStackBSize : DWord;
+  vStackIni : DWord;
+  vStackEnd : DWord;
+
+  vHeapBSize : DWord;
+  vHeapStart : DWord;
+  vHeapIni : DWord;
+  vHeapEnd : DWord;
+
+  vFreeMemStart : DWord;
+  vFreeMemBSize : DWord;
+  vFreeMemSize  : DWord;
+
+begin
+  { *** verificando a CPU *** }
+  Write('Verificando CPU minima (', CPUType2Str(vCPUMin), '): ');
+
+  if (vCPUType > vCPUMin) then
+    Writeln('OK')
+  else
+    Writeln('FALHA');
+
+  { *** calculando memoria disponivel *** }
+  Writeln;
+  Writeln('Verificando memoria...');
+
+  vBlockSize := 1 shl vMemAlign;
+
+  Writeln(' * Alinhamento : ', vBlockSize, ' bytes');
+
+  vHighMemoryIni := ($FFFFF shr vMemAlign) + 1;
+  vHighMemoryEnd := (($100000 + (vHighMemory shl 10)) shr vMemAlign) - 1;
+  vHighMemoryBSize := vHighMemoryEnd - vHighMemoryIni + 1;
+
+  Writeln(' - Tamanho: ', vHighMemory, ' Kbytes [ ', vHighMemoryBSize, ' bloco(s) ]');
+
+  vFreeMemIni := vHighMemoryIni;
+  vFreeMemEnd := vHighMemoryEnd;
+
+  { *** calculando posicao do bloco de codigo *** }
+  Writeln;
+  Writeln(' Codigo:');
+  Writeln(' - Ponto de entrada: 0x', DWordToHex2(vEntryPoint));
+
+  vCodeIni := vEntryPoint shr vMemAlign;
+  vCodeEnd := (vEntryPoint + vKernelSize) shr vMemAlign;
+  vCodeSize := vCodeEnd - vCodeIni + 1;
+
+  Writeln(' - Tamanho: ', vKernelSize, ' bytes [ ', vCodeSize, ' bloco(s) ]');
+
+  if (vCodeIni < vFreeMemIni) or (vCodeEnd > vFreeMemEnd) then
+  begin
+    Writeln;
+    Writeln('Codigo posicionado fora da memoria. Abortando!');
+    Finish;
+  end;
+
+  {calculando memoria livre}
+  vFreeMemIni := vCodeEnd + 1;
+
+  { *** calculando posicao do bloco de pilha *** }
+  Writeln;
+  Writeln(' Pilha:');
+
+  vStackHigh := (vStackSize = 0);
+
+  if vStackHigh then
+    Writeln(' - Modo Expansivel')
+  else
+    Writeln(' - Modo Fixo');
+
+  if vStackHigh then
+    vStackSize := vBlockSize;
+
+  vStackBSize := ((vStackSize - 1) shr vMemAlign) + 1;
+
+  Writeln(' - Tamanho: ', vStackSize, ' bytes [ ', vStackBSize, ' bloco(s) ]');
+
+  if vStackHigh then
+  begin
+    {pilha na parte superior da memoria}
+    vStackEnd := vFreeMemEnd;
+    vStackIni := vStackEnd - vStackBSize + 1;
+  end
+  else
+  begin
+    {pilha apos o codigo}
+    vStackIni := vFreeMemIni;
+    vStackEnd := vStackIni + vStackBSize - 1;
+  end;
+
+  if (vStackIni < vFreeMemIni) or (vStackEnd > vFreeMemEnd) then
+  begin
+    Writeln;
+    Writeln('Pilha posicionada fora da memoria. Abortando!');
+    Finish;
+  end;
+
+  vStackStart := ((vStackEnd + 1) shl vMemAlign) - 4;
+  Writeln(' - Inicio:  0x', DWordToHex2(vStackStart));
+
+  {calculando memoria livre}
+  if vStackHigh then
+    vFreeMemEnd := vStackIni - 1
+  else
+    vFreeMemIni := vStackEnd + 1;
+
+  { *** calculando posicao do bloco de heap *** }
+  Writeln;
+  Writeln(' Heap:');
+
+  if (vHeapSize <> 0) then
+    vHeapBSize := ((vHeapSize - 1) shr vMemAlign) + 1
+  else
+    vHeapBSize := 0;
+
+  Writeln(' - Tamanho: ', vHeapSize, ' bytes [ ', vHeapBSize, ' bloco(s) ]');
+
+  if (vHeapSize = 0) then
+  begin
+    Writeln(' * Nenhum heap necessario, ignorando...');
+
+    vHeapStart := $FFFFFFFF;
+  end
+  else
+  begin
+    vHeapIni := vFreeMemIni;
+    vHeapEnd := vHeapIni + vHeapBSize -1;
+
+    if (vHeapIni < vFreeMemIni) or (vHeapEnd > vFreeMemEnd) then
+    begin
+      Writeln;
+      Writeln('Heap posicionado fora da memoria. Abortando!');
+      Finish;
+    end;
+
+    vHeapStart := vHeapIni shl vMemAlign;
+    Writeln(' - Inicio:  0x', DWordToHex2(vHeapStart));
+
+    {calculando memoria livre}
+    vFreeMemIni := vHeapEnd + 1;
+  end;
+
+  { *** memoria livre *** }
+  Writeln;
+  Writeln('Memoria livre:');
+
+  vFreeMemBSize := vFreeMemEnd - vFreeMemIni + 1;
+  vFreeMemSize := (vFreeMemBSize shl vMemAlign) shr 10;
+
+  if (vFreeMemBSize = 0) then
+    vFreeMemStart := $FFFFFFFF
+  else
+    vFreeMemStart := vFreeMemIni shl vMemAlign;
+
+  Writeln(' - Inicio:  0x', DWordToHex2(vFreeMemStart));
+  Writeln(' - Tamanho: ', vFreeMemSize, ' Kbytes [ ', vFreeMemBSize, ' bloco(s) ]');
 end;
 
 {Testa suporte de A20 pela BIOS}
@@ -600,15 +875,22 @@ var
 
   PTemp : TPointerFar16;
 
-  procedure DoSetup(Entrada : Byte);
+  function DoSetup(Entrada : Word) : Word;
+  var
+    vDesc : Word;
+
   begin
     SetupGDT(GDT[Entrada], Base, Limite, ACS, ATR);
 
-    Writeln('0x', ByteToHex(Entrada shl 3),
+    vDesc := Entrada shl 3;
+
+    Writeln('0x', WordToHex(vDesc),
       ' => Base: ', DWordToHex2(Base),
       '  Limite: ', DWordToHex2(Limite),
       '  ACS: ', ByteToHex(ACS),
       '  ATR: ', ByteToHex(ATR));
+
+    DoSetup := vDesc;
   end;
 
 begin
@@ -622,7 +904,7 @@ begin
   Limite := 0;
   ACS := 0;
   ATR := 0;
-  DoSetup(0);
+  vCodeDesc := DoSetup(0); {usando temporariamente...}
 
   {todos os descritores usam as mesmas definicoes}
   Base := $0;
@@ -631,15 +913,15 @@ begin
 
   {0x08 -- descritor do segmento de codigo, kernel}
   ACS := ACS_CODE;
-  DoSetup(1);
+  vCodeDesc := DoSetup(1);
 
   {0x10 -- descritor do segmento de dados}
   ACS := ACS_DATA;
-  DoSetup(2);
+  vDataDesc := DoSetup(2);
 
   {0x18 -- descritor do segmento de pilha}
   ACS := ACS_STACK;
-  DoSetup(3);
+  vStackDesc := DoSetup(3);
 
   {setando o registrador GDTR}
 
@@ -658,7 +940,7 @@ end;
 {Habilita o Modo Unreal}
 procedure StartUnReal(DescFlat : Word);
 begin
-  Write('Configurando o UnReal Mode... ');
+  Write('Configurando o UnReal Mode (atraves do descritor 0x', WordToHex(DescFlat), ') ... ');
 
   {desabilita as interrupcoes para que as IRQs nao causem excecoes}
   DisableInt;
@@ -682,7 +964,6 @@ end;
 procedure LoadKernel;
 var
   vKernel : File;
-  vKernelSize : DWord;
   vMaxAvail : DWord;
   vBufferSize : Word;
   vBuffer : Pointer;
@@ -697,18 +978,11 @@ begin
   Assign(vKernel, cKernelName);
   Reset(vKernel, 1);
 
-  vKernelSize := FileSize(vKernel);
+  Writeln('Preparando para carregar o kernel...');
+  Writeln('Ponto de entrada: 0x', DWordToHex2(vEntryPoint));
   Writeln('Kernel com ', vKernelSize, ' Bytes.');
 
-  {Verificando se ha espaco suficiente para carregar o kernel}
-  if (vExecSize < vKernelSize) then
-  begin
-    Writeln('Espaco de execucao insuficiente para o kernel. Abortando!');
-    Close(vKernel);
-    Finish;
-  end;
-
-  {Definindo tamanho buffer}
+  {criando buffer}
   vMaxAvail := MaxAvail;
 
   if (vMaxAvail > cMaxBuffer) then
@@ -733,7 +1007,7 @@ begin
     if ((vKernelSize mod vBufferSize) <> 0) then
       Inc(nPassos);
 
-    Writeln('Kernel grande, carregando em ', nPassos, ' passos...');
+    Write('Kernel grande, carregando em ', nPassos, ' passos...');
   end
   else
   begin
@@ -746,7 +1020,7 @@ begin
   for vPasso := 1 to nPassos do
   begin
     BlockRead(vKernel, vBuffer^, vBufferSize, vLidos);
-    CopyLinear(vBufferLinear, vExecLinear + ((vPasso - 1) * vBufferSize), vLidos);
+    CopyLinear(vBufferLinear, vEntryPoint + ((vPasso - 1) * vBufferSize), vLidos);
   end;
 
   {mostra informacao e fecha o arquivo}
@@ -770,14 +1044,14 @@ var
 
 begin
   {prepara parametros para a chamada do kernel}
-  vCS := $08; {descritor para o segmento de codigo}
-  vEntry := cExecEntry;
+  vCS := vCodeDesc;
+  vEntry := vEntryPoint;
 
-  vDS := $10; {descritor para o segmento de dados}
-  vES := $10;
+  vDS := vDataDesc;
+  vES := vDataDesc;
 
-  vSS := $18; {descritor para o segmento de pilha}
-  vStack := cStack;
+  vSS := vStackDesc;
+  vStack := vStackStart;
 
   {segmento de video}
   PTemp.Seg := vCRTSeg;
@@ -809,10 +1083,6 @@ begin
   {Impossivel o retorno a esse ponto pelo kernel}
 end;
 
-
-var
-  vKey : Char;
-
 {Procedimento principal}
 begin
   ShowWarning;
@@ -822,39 +1092,44 @@ begin
   TestCPU;
   TestMem;
   TestCRT;
+
   Writeln;
+  Writeln('Imagem do kernel: ', cKernelName);
 
   {verifica se existe a imagem do kernel}
   if not FileExists(cKernelName) then
   begin
-    Writeln('Imagem do kernel: ', cKernelName);
     Writeln('Imagem de kernel nao encotrada. Abortando!');
     Finish;
   end;
 
-  {habilita A20}
-  EnableA20;
-  Writeln;
+  {pegando parametros do kernel}
+  GetKernelParam;
 
-  {define o ponto de carregamento}
-  vExecLinear := cExecEntry;
-  vExecSize := cMaxExecSpace;
+  WaitKey;
+
+  {verifica parametros}
+  Writeln;
+  CheckParam;
+
+  WaitKey;
+
+  {habilita A20}
+  Writeln;
+  EnableA20;
 
   {configura a GDT}
-  ConfigGDT;
   Writeln;
+  ConfigGDT;
 
   {habilita Unreal Mode}
-  StartUnReal($10);
   Writeln;
+  StartUnReal(vDataDesc);
 
-  Write('Pressione qualquer tecla para continuar... ');
-  vKey := ReadKey;
-  ClrScr;
+  WaitKey;
 
   {carrega o kernel}
   Writeln;
-  Writeln('Imagem do kernel: ', cKernelName);
   LoadKernel;
 
   {chama o kernel}
