@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.13
-  Data: 21/04/2013
+  Versao: 0.14
+  Data: 23/04/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -47,7 +47,7 @@ uses CopyRigh, Basic, CPUInfo, MemInfo, CRTInfo, EStrings, BootKT, BootBT,
 
 {Constantes gerais}
 const
-  cKernelName = 'pkrnl05.bin';
+  cKernelName = 'kernel.bin';
   cCPUMin = CT80386;  {minimo para o boot}
   cCPUMax = CT80586;  {maximo detectavel}
   cHighMemoryMin = 1024; {1M}
@@ -83,7 +83,114 @@ var
   vHeapStart : DWord;
   {passado ao kernel}
   vBootTable : TBootTable;
+  {interno}
+  vDebug : Boolean;
+  vKernelName : String;
 
+
+{Usado internamente}
+procedure GetCommandLine;
+var
+  I : Byte;
+  vSkip : Boolean;
+  vHelp : Boolean;
+  vError : Boolean;
+  vWarning : Boolean;
+  vTemp : String;
+
+begin
+  vSkip := False;
+  vDebug := False;
+  vHelp := False;
+  vError := False;
+  vWarning := False;
+  vKernelName := '';
+
+  for I := 1 to ParamCount do
+  begin
+    vTemp := ParamStr(I);
+
+    case vTemp[1] of
+      ':' :
+        if (vTemp = ':)') then
+          vSkip := True
+        else
+          vError := True;
+
+      '-' :
+        if (vTemp = '-s') or (vTemp = '-S') then
+          vSkip := True
+        else if (vTemp = '-d') or (vTemp = '-D') then
+          vDebug := True
+        else if (vTemp = '-h') or (vTemp = '-H') then
+          vHelp := True
+        else if (vTemp = '-w') or (vTemp = '-W') then
+          vWarning := True
+        else
+          vError := True;
+    else
+      if (vKernelName = '') then
+        vKernelName := vTemp
+      else
+      begin
+        vKernelName := '';
+        vError := True;
+      end;
+    end;
+  end;
+
+  if vError then
+  begin
+    Writeln;
+    Writeln('Parametro incorreto passado ao programa, tente -h para mais opcoes.');
+    Finish;
+  end;
+
+  if vHelp then
+  begin
+    Writeln;
+    Writeln('<<<<<< LoadLOS - Carregador do LuckyOS >>>>>>');
+    Writeln;
+    Writeln('Este programa carrega o kernel do Sistema Operacional LuckyOS');
+    Writeln;
+    Writeln('Uso:');
+    Writeln;
+    Writeln(' loadlos -d -h -s -w <kernelname>');
+    Writeln;
+    Writeln('  -d : Modo de depuracao;');
+    Writeln('  -h : Mostra este texto de ajuda;');
+    Writeln('  -s : Pula a tela de aviso inicial;');
+    Writeln('  -W : Mostra a tela de aviso inicial e sai.');
+    Writeln;
+    Writeln('  kernelname : Informa o nome do arquivo de imagem do kernel,');
+    Writeln('    se nenhum nome eh informado "kernel.bin" eh usado.');
+    Finish;
+  end;
+
+  if vWarning then
+  begin
+    ShowWarning;
+    Finish;
+  end;
+
+  {vDebug esta configurado....}
+  if vDebug then
+    vSkip := True;
+
+  if (vKernelName = '') then
+    vKernelName := cKernelName
+  else
+    vSkip := True;
+
+  if not vSkip then
+    ShowWarning;
+
+  if vDebug then
+  begin
+    Writeln;
+    Writeln(' <<< Modo de depuracao ativado! >>>');
+  end;
+end;
 
 {Usado internamente}
 function CPUType2Str(CPUType : TCPUType) : String;
@@ -101,17 +208,19 @@ begin
 end;
 
 {Usado internamente}
-procedure WaitKey;
+procedure WaitKey(Always : Boolean);
 var
   vKey : Char;
 
 begin
-  Writeln;
-  Write('Pressione qualquer tecla para continuar... ');
-  vKey := ReadKey;
-  ClrScr;
+  if vDebug or Always then
+  begin
+    Writeln;
+    Write('Pressione qualquer tecla para continuar... ');
+    vKey := ReadKey;
+    ClrScr;
+  end;
 end;
-
 
 {Verifica a CPU}
 procedure TestCPU;
@@ -218,7 +327,7 @@ var
 
 begin
   {abre arquivo de kernel}
-  Assign(vKernel, cKernelName);
+  Assign(vKernel, vKernelName);
   Reset(vKernel, 1);
 
   vKernelSize := FileSize(vKernel);
@@ -266,16 +375,19 @@ begin
   vStackSize := vKernelTable.StackSize;
   vHeapSize := vKernelTable.HeapSize;
 
-  Writeln;
-  Writeln('Parametros do kernel:');
+  if vDebug then
+  begin
+    Writeln;
+    Writeln('Parametros do kernel:');
 
-  {mostra valores, util para debug}
-  Writeln;
-  Writeln('CPU Minimal:  ', CPUType2Str(vCPUMin));
-  Writeln('Memory Align: ', vMemAlign);
-  Writeln('Entry Point:  0x', DWordToHex2(vEntryPoint));
-  Writeln('Stack Size:   0x', DWordToHex2(vStackSize));
-  Writeln('Heap Size:    0x', DWordToHex2(vHeapSize));
+    {mostra valores, util para debug}
+    Writeln;
+    Writeln('CPU Minimal:  ', CPUType2Str(vCPUMin));
+    Writeln('Memory Align: ', vMemAlign);
+    Writeln('Entry Point:  0x', DWordToHex2(vEntryPoint));
+    Writeln('Stack Size:   0x', DWordToHex2(vStackSize));
+    Writeln('Heap Size:    0x', DWordToHex2(vHeapSize));
+  end;
 
   {fecha arquivo do kernel}
   Close(vKernel);
@@ -302,6 +414,7 @@ var
   vStackIni : DWord;
   vStackEnd : DWord;
 
+  vHeapGrow : Boolean;
   vHeapBSize : DWord;
   vHeapIni : DWord;
   vHeapEnd : DWord;
@@ -317,38 +430,53 @@ begin
   if (vCPUType > vCPUMin) then
     Writeln('OK')
   else
+  begin
     Writeln('FALHA');
+    Finish;
+  end;
 
   { *** calculando memoria disponivel *** }
-  Writeln;
-  Writeln('Verificando memoria...');
+  if vDebug then
+    Writeln;
+
+  Write('Verificando memoria... ');
+
+  if vDebug then
+    Writeln;
 
   vBlockSize := 1 shl vMemAlign;
-
-  Writeln(' * Alinhamento : ', vBlockSize, ' bytes');
 
   vHighMemoryIni := ($FFFFF shr vMemAlign) + 1;
   vHighMemoryEnd := (($100000 + (vHighMemory shl 10)) shr vMemAlign) - 1;
   vHighMemoryBSize := vHighMemoryEnd - vHighMemoryIni + 1;
 
-  Writeln(' - Tamanho: ', vHighMemory, ' Kbytes [ ', vHighMemoryBSize, ' bloco(s) ]');
-
   vFreeMemIni := vHighMemoryIni;
   vFreeMemEnd := vHighMemoryEnd;
 
-  { *** calculando posicao do bloco de codigo *** }
-  Writeln;
-  Writeln(' Codigo:');
-  Writeln(' - Ponto de entrada: 0x', DWordToHex2(vEntryPoint));
+  if vDebug then
+  begin
+    Writeln(' ---------------------------------------------------------------------- ');
+    Writeln(' * Alinhamento : ', vBlockSize, ' bytes');
+    Writeln(' - Tamanho: ', vHighMemory, ' Kbytes [ ', vHighMemoryBSize, ' bloco(s) ]');
+  end;
 
+  { *** calculando posicao do bloco de codigo *** }
   vCodeIni := vEntryPoint shr vMemAlign;
   vCodeEnd := (vEntryPoint + vKernelSize) shr vMemAlign;
   vCodeSize := vCodeEnd - vCodeIni + 1;
 
-  Writeln(' - Tamanho: ', vKernelSize, ' bytes [ ', vCodeSize, ' bloco(s) ]');
+  if vDebug then
+  begin
+    Writeln(' ------------------------------- Codigo ------------------------------- ');
+    Writeln(' - Ponto de entrada: 0x', DWordToHex2(vEntryPoint));
+    Writeln(' - Tamanho: ', vKernelSize, ' bytes [ ', vCodeSize, ' bloco(s) ]');
+  end;
 
   if (vCodeIni < vFreeMemIni) or (vCodeEnd > vFreeMemEnd) then
   begin
+    if not vDebug then
+      Writeln('FALHA');
+
     Writeln;
     Writeln('Codigo posicionado fora da memoria. Abortando!');
     Finish;
@@ -358,22 +486,24 @@ begin
   vFreeMemIni := vCodeEnd + 1;
 
   { *** calculando posicao do bloco de pilha *** }
-  Writeln;
-  Writeln(' Pilha:');
-
   vStackHigh := (vStackSize = 0);
-
-  if vStackHigh then
-    Writeln(' - Modo Expansivel')
-  else
-    Writeln(' - Modo Fixo');
 
   if vStackHigh then
     vStackSize := vBlockSize;
 
   vStackBSize := ((vStackSize - 1) shr vMemAlign) + 1;
 
-  Writeln(' - Tamanho: ', vStackSize, ' bytes [ ', vStackBSize, ' bloco(s) ]');
+  if vDebug then
+  begin
+    Writeln(' ------------------------------- Pilha -------------------------------- ');
+
+    if vStackHigh then
+      Writeln(' - Modo Expansivel')
+    else
+      Writeln(' - Modo Fixo');
+
+    Writeln(' - Tamanho: ', vStackSize, ' bytes [ ', vStackBSize, ' bloco(s) ]');
+  end;
 
   if vStackHigh then
   begin
@@ -390,6 +520,9 @@ begin
 
   if (vStackIni < vFreeMemIni) or (vStackEnd > vFreeMemEnd) then
   begin
+    if not vDebug then
+      Writeln('FALHA');
+
     Writeln;
     Writeln('Pilha posicionada fora da memoria. Abortando!');
     Finish;
@@ -397,7 +530,9 @@ begin
 
   vStackStart := ((vStackEnd + 1) shl vMemAlign) - 4;
   vStackSize := (vStackEnd - vStackIni + 1) shl vMemAlign;
-  Writeln(' - Inicio:  0x', DWordToHex2(vStackStart));
+
+  if vDebug then
+    Writeln(' - Inicio:  0x', DWordToHex2(vStackStart));
 
   {calculando memoria livre}
   if vStackHigh then
@@ -406,46 +541,58 @@ begin
     vFreeMemIni := vStackEnd + 1;
 
   { *** calculando posicao do bloco de heap *** }
-  Writeln;
-  Writeln(' Heap:');
+  vHeapGrow := (vHeapSize = 0);
 
-  if (vHeapSize <> 0) then
-    vHeapBSize := ((vHeapSize - 1) shr vMemAlign) + 1
-  else
-    vHeapBSize := 0;
-
-  Writeln(' - Tamanho: ', vHeapSize, ' bytes [ ', vHeapBSize, ' bloco(s) ]');
-
-  if (vHeapSize = 0) then
+  if vHeapGrow then
   begin
-    Writeln(' * Nenhum heap necessario, ignorando...');
+    {heap expansivel}
+    vHeapIni := vFreeMemIni;
+    vHeapEnd := vFreeMemEnd;
 
-    vHeapStart := $FFFFFFFF;
+    vHeapBSize := vHeapEnd - vHeapIni + 1;
+    vHeapSize := vHeapBSize shl vMemAlign;
   end
   else
   begin
+    {heap fixo}
+    vHeapBSize := ((vHeapSize - 1) shr vMemAlign) + 1;
+
     vHeapIni := vFreeMemIni;
-    vHeapEnd := vHeapIni + vHeapBSize -1;
-
-    if (vHeapIni < vFreeMemIni) or (vHeapEnd > vFreeMemEnd) then
-    begin
-      Writeln;
-      Writeln('Heap posicionado fora da memoria. Abortando!');
-      Finish;
-    end;
-
-    vHeapStart := vHeapIni shl vMemAlign;
-    vHeapSize := (vHeapEnd - vHeapIni + 1) shl vMemAlign;
-    Writeln(' - Inicio:  0x', DWordToHex2(vHeapStart));
-
-    {calculando memoria livre}
-    vFreeMemIni := vHeapEnd + 1;
+    vHeapEnd := vHeapIni + vHeapBSize - 1;
   end;
 
-  { *** memoria livre *** }
-  Writeln;
-  Writeln('Memoria livre:');
+  if vDebug then
+  begin
+    Writeln(' ------------------------------- Heap --------------------------------- ');
 
+    if vHeapGrow then
+      Writeln(' - Modo Expansivel')
+    else
+      Writeln(' - Modo Fixo');
+
+    Writeln(' - Tamanho: ', vHeapSize, ' bytes [ ', vHeapBSize, ' bloco(s) ]');
+  end;
+
+  if (vHeapIni < vFreeMemIni) or (vHeapEnd > vFreeMemEnd) then
+  begin
+    if not vDebug then
+      writeln('FALHA');
+
+    Writeln;
+    Writeln('Heap posicionado fora da memoria. Abortando!');
+    Finish;
+  end;
+
+  vHeapStart := vHeapIni shl vMemAlign;
+  vHeapSize := (vHeapEnd - vHeapIni + 1) shl vMemAlign;
+
+  if vDebug then
+    Writeln(' - Inicio:  0x', DWordToHex2(vHeapStart));
+
+  {calculando memoria livre}
+  vFreeMemIni := vHeapEnd + 1;
+
+  { *** memoria livre *** }
   vFreeMemBSize := vFreeMemEnd - vFreeMemIni + 1;
   vFreeMemSize := (vFreeMemBSize shl vMemAlign) shr 10;
 
@@ -454,8 +601,15 @@ begin
   else
     vFreeMemStart := vFreeMemIni shl vMemAlign;
 
-  Writeln(' - Inicio:  0x', DWordToHex2(vFreeMemStart));
-  Writeln(' - Tamanho: ', vFreeMemSize, ' Kbytes [ ', vFreeMemBSize, ' bloco(s) ]');
+  if vDebug then
+  begin
+    Writeln(' ---------------------------- Memoria livre --------------------------- ');
+    Writeln(' - Inicio:  0x', DWordToHex2(vFreeMemStart));
+    Writeln(' - Tamanho: ', vFreeMemSize, ' Kbytes [ ', vFreeMemBSize, ' bloco(s) ]');
+    Writeln(' ---------------------------------------------------------------------- ');
+  end
+  else
+    Writeln('OK');
 end;
 
 {Testa suporte de A20 pela BIOS}
@@ -732,7 +886,8 @@ begin
   else
     Writeln('FALHOU');
 
-  Writeln;
+  if vDebug then
+    Writeln;
 
   if vA20Bios then
   begin
@@ -795,7 +950,8 @@ begin
       Writeln('FALHOU');
   end;
 
-  Writeln;
+  if vDebug then
+    Writeln;
 
   {verifica se ha pelo menos um suporte}
   if (vA20Bios or vA20KBC or vA20Fast) then
@@ -888,18 +1044,26 @@ var
 
     vDesc := Entrada shl 3;
 
-    Writeln('0x', WordToHex(vDesc),
-      ' => Base: ', DWordToHex2(Base),
-      '  Limite: ', DWordToHex2(Limite),
-      '  ACS: ', ByteToHex(ACS),
-      '  ATR: ', ByteToHex(ATR));
+    if vDebug then
+    begin
+      Writeln('0x', WordToHex(vDesc),
+        ' => Base: ', DWordToHex2(Base),
+        '  Limite: ', DWordToHex2(Limite),
+        '  ACS: ', ByteToHex(ACS),
+        '  ATR: ', ByteToHex(ATR));
+    end;
 
     DoSetup := vDesc;
   end;
 
 begin
-  Writeln('Configurando GDT... ');
-  Writeln;
+  Write('Configurando GDT... ');
+
+  if vDebug then
+  begin
+    Writeln;
+    Writeln;
+  end;
 
   {cria GDT, configura}
 
@@ -939,6 +1103,9 @@ begin
   GDTR.Limit := SizeOf(GDT) - 1;
 
   LoadGDT(@GDTR);
+
+  if not vDebug then
+    Writeln('OK');
 end;
 
 {Habilita o Modo Unreal}
@@ -979,12 +1146,15 @@ var
 
 begin
   {abre a imagem de kernel}
-  Assign(vKernel, cKernelName);
+  Assign(vKernel, vKernelName);
   Reset(vKernel, 1);
 
-  Writeln('Preparando para carregar o kernel...');
-  Writeln('Ponto de entrada: 0x', DWordToHex2(vEntryPoint));
-  Writeln('Kernel com ', vKernelSize, ' Bytes.');
+  if vDebug then
+  begin
+    Writeln('Preparando para carregar o kernel...');
+    Writeln('Ponto de entrada: 0x', DWordToHex2(vEntryPoint));
+    Writeln('Kernel com ', vKernelSize, ' Bytes.');
+  end;
 
   {criando buffer}
   vMaxAvail := MaxAvail;
@@ -1000,8 +1170,11 @@ begin
   vBufferSeg := TPointerFar16(vBuffer);
   vBufferLinear := PFar16ToPLinear(vBufferSeg);
 
-  Writeln('Buffer criado com ', vBufferSize, ' bytes em 0x', DWordToHex2(vBufferLinear));
-  Writeln;
+  if vDebug then
+  begin
+    Writeln('Buffer criado com ', vBufferSize, ' bytes em 0x', DWordToHex2(vBufferLinear));
+    Writeln;
+  end;
 
   {Verificando que o kernel pode ser copiado em quantos passos}
   if (vKernelSize > vBufferSize) then
@@ -1087,16 +1260,20 @@ begin
   Pointer(PTemp) := @vBootTable;
   vParam := PFar16ToPLinear(PTemp);
 
-  Writeln;
-  Writeln('Ambiente de execucao:');
-  Writeln('CS: ', WordToHex(vCS));
-  Writeln('DS: ', WordToHex(vDS));
-  Writeln('ES: ', WordToHex(vES));
-  Writeln('SS: ', WordToHex(vSS));
-  Writeln('Entry: ', DWordToHex2(vEntry));
-  Writeln('Stack: ', DWordToHex2(vStack));
-  Writeln('Param: ', DWordToHex2(vParam));
-  Writeln;
+  if vDebug then
+  begin
+    Writeln;
+    Writeln('Ambiente de execucao:');
+    Writeln('CS: ', WordToHex(vCS));
+    Writeln('DS: ', WordToHex(vDS));
+    Writeln('ES: ', WordToHex(vES));
+    Writeln('SS: ', WordToHex(vSS));
+    Writeln('Entry: ', DWordToHex2(vEntry));
+    Writeln('Stack: ', DWordToHex2(vStack));
+    Writeln('Param: ', DWordToHex2(vParam));
+    Writeln;
+  end;
+
   Writeln('Executando kernel em 0x', DWordToHex2(vEntry));
 
   {desabilita as interrupcoes para que as IRQs nao causem excecoes}
@@ -1113,7 +1290,7 @@ end;
 
 {Procedimento principal}
 begin
-  ShowWarning;
+  GetCommandLine;
 
   {verifica requisitos}
   Writeln;
@@ -1122,10 +1299,10 @@ begin
   TestCRT;
 
   Writeln;
-  Writeln('Imagem do kernel: ', cKernelName);
+  Writeln('Imagem do kernel: ', vKernelName);
 
   {verifica se existe a imagem do kernel}
-  if not FileExists(cKernelName) then
+  if not FileExists(vKernelName) then
   begin
     Writeln('Imagem de kernel nao encotrada. Abortando!');
     Finish;
@@ -1134,13 +1311,13 @@ begin
   {pegando parametros do kernel}
   GetKernelParam;
 
-  WaitKey;
+  WaitKey(False);
 
   {verifica parametros}
   Writeln;
   CheckParam;
 
-  WaitKey;
+  WaitKey(False);
 
   {habilita A20}
   Writeln;
@@ -1151,10 +1328,12 @@ begin
   ConfigGDT;
 
   {habilita Unreal Mode}
-  Writeln;
+  if vDebug then
+    Writeln;
+
   StartUnReal(vDataDesc);
 
-  WaitKey;
+  WaitKey(False);
 
   {carrega o kernel}
   Writeln;
@@ -1162,32 +1341,35 @@ begin
 
   {configura a tabela de boot}
   ConfigBootTable;
+  WaitKey(False);
 
-  {informacoes sobre a tabela de boot}
-  WaitKey;
-  Writeln;
-  Writeln('Tabela de boot:');
-  Writeln;
-  Writeln('CPULevel: ', vBootTable.CPULevel);
-  Writeln('LowMemory: ', vBootTable.LowMemory);
-  Writeln('HighMemory: ', vBootTable.HighMemory);
-  Writeln('CRTInfo: 0x', WordToHex(vBootTable.CRTInfo));
-  Writeln('CRTRows: ', vBootTable.CRTRows);
-  Writeln('CRTCols; ', vBootTable.CRTCols);
-  Writeln('CRTPort; 0x', WordToHex(vBootTable.CRTPort));
-  Writeln('CRTSeg: 0x', WordToHex(vBootTable.CRTSeg));
-  Writeln('A20KBC: ', vBootTable.A20KBC);
-  Writeln('A20Bios: ', vBootTable.A20Bios);
-  Writeln('A20Fast: ', vBootTable.A20Fast);
-  Writeln('CodeIni: 0x', DWordToHex2(vBootTable.CodeIni));
-  Writeln('CodeEnd: 0x', DWordToHex2(vBootTable.CodeEnd));
-  Writeln('StackIni: 0x', DWordToHex2(vBootTable.StackIni));
-  Writeln('StackEnd: 0x', DWordToHex2(vBootTable.StackEnd));
-  Writeln('HeapIni: 0x', DWordToHex2(vBootTable.HeapIni));
-  Writeln('HeapEnd: 0x', DWordToHex2(vBootTable.HeapEnd));
-  Writeln;
-  Writeln('Para debug => Ofset do CRTSeg: ', Ofs(vBootTable.CRTSeg) - Ofs(vBootTable));
-  WaitKey;
+  if vDebug then
+  begin
+    {informacoes sobre a tabela de boot}
+    Writeln;
+    Writeln('Tabela de boot:');
+    Writeln;
+    Writeln('CPULevel: ', vBootTable.CPULevel);
+    Writeln('LowMemory: ', vBootTable.LowMemory);
+    Writeln('HighMemory: ', vBootTable.HighMemory);
+    Writeln('CRTInfo: 0x', WordToHex(vBootTable.CRTInfo));
+    Writeln('CRTRows: ', vBootTable.CRTRows);
+    Writeln('CRTCols; ', vBootTable.CRTCols);
+    Writeln('CRTPort; 0x', WordToHex(vBootTable.CRTPort));
+    Writeln('CRTSeg: 0x', WordToHex(vBootTable.CRTSeg));
+    Writeln('A20KBC: ', vBootTable.A20KBC);
+    Writeln('A20Bios: ', vBootTable.A20Bios);
+    Writeln('A20Fast: ', vBootTable.A20Fast);
+    Writeln('CodeIni: 0x', DWordToHex2(vBootTable.CodeIni));
+    Writeln('CodeEnd: 0x', DWordToHex2(vBootTable.CodeEnd));
+    Writeln('StackIni: 0x', DWordToHex2(vBootTable.StackIni));
+    Writeln('StackEnd: 0x', DWordToHex2(vBootTable.StackEnd));
+    Writeln('HeapIni: 0x', DWordToHex2(vBootTable.HeapIni));
+    Writeln('HeapEnd: 0x', DWordToHex2(vBootTable.HeapEnd));
+    Writeln;
+    Writeln('Para debug => Ofset do CRTSeg: ', Ofs(vBootTable.CRTSeg) - Ofs(vBootTable));
+    WaitKey(True);
+  end;
 
   {chama o kernel}
   ExecKernel;
