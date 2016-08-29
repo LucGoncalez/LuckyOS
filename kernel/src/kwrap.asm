@@ -26,8 +26,8 @@
 ;   Arquivo escrito em Assembly que "envolve" o código escrito em linguagem
 ; de alto nivel, ele server para fazer a inicializacao inicial do kernel.
 ; --------------------------------------------------------------------------
-; Versao: 0.0 (pkernel v0.6)
-; Data: 28/04/2013
+; Versao: 0.1
+; Data: 29/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f elf32 kwrap.asm
@@ -43,10 +43,8 @@
   StackSize   EQU 0x00000000  ; Extensivel
   HeapSize    EQU 0x00000000  ; Extensivel
 
-; constante
-  AddrVideoSeg  EQU 23
-
 GLOBAL start
+EXTERN kernelinit
 
 SECTION .text
 
@@ -70,17 +68,5 @@ start:
   ; *** Tabela de dados do kernel usada no boot
 
 kstart:
-  mov ebx, eax    ; recebe o endereco da tabela de boot
-
-  xor eax, eax
-  mov ax, [ebx + AddrVideoSeg] ; pega o endereço de video em AX
-
-  shl eax, 4      ; converte segmento para endereco linear
-  add eax, 70*2   ; determina posicao da linha 1/coluna 70
-  mov ebx, eax
-
-  xor eax, eax
-loop:
-  mov [ebx], eax  ; Copia o caracter+atributo para a posicao do video
-  inc eax           ; Troca caracter+atributo
-  jmp short loop    ; Loop infinito
+  push eax
+  call kernelinit
