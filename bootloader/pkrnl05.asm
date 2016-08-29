@@ -21,7 +21,7 @@
 ; Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
 ; GNU e obtenha sua licenca: http://www.gnu.org/
 ;===========================================================================
-; pKrnl04.asm
+; pKrnl05.asm
 ; --------------------------------------------------------------------------
 ; Este arquivo eh um pequeno kernel para teste do bootloader.
 ;
@@ -31,11 +31,11 @@
 ;
 ; Ele "roda" um caracter na primeira linha, coluna 70.
 ; --------------------------------------------------------------------------
-; Versao: 0.4
-; Data: 19/04/2013
+; Versao: 0.5
+; Data: 21/04/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
-; > nasm -f bin -o pkrnl04.bin pkrnl04.asm
+; > nasm -f bin -o pkrnl05.bin pkrnl05.asm
 ; ------------------------------------------------------------------------
 ; Executar: Executado pelo LoadLOS.
 ;===========================================================================
@@ -69,6 +69,9 @@
   StackSize   EQU 0x00010000  ; 64K
   HeapSize    EQU 0x00008000  ; 4K
 
+; constante
+  AddrVideoSeg  EQU 23
+
 SECTION .text
 
 [BITS 32]         ; 32 bits ebaaaaaaaaaaa
@@ -92,8 +95,14 @@ start:
   ; *** Tabela de dados do kernel usada no boot
 
 kstart:
-  mov ebx, eax    ; recebe o endereco de video em EAX
-  add ebx, 70*2   ; determina posicao da linha 1/coluna 70
+  mov ebx, eax    ; recebe o endereco da tabela de boot
+
+  xor eax, eax
+  mov ax, [ebx + AddrVideoSeg] ; pega o endereço de video em AX
+
+  shl eax, 4      ; converte segmento para endereco linear
+  add eax, 70*2   ; determina posicao da linha 1/coluna 70
+  mov ebx, eax
 
   xor eax, eax
 loop:
