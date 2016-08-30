@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit principal do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.0
-  Data: 29/04/2013
+  Versao: 0.1
+  Data: 07/05/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernel.pas
@@ -38,34 +38,34 @@ unit kernel;
 
 interface
 
-  procedure KernelInit(BootTable : Pointer); stdcall;
+  procedure KernelInit(BootTable : Pointer);
 
 implementation
 
-uses BootBT32;
+uses BootBT32, GrossCRT;
 
-const
-  nRows = 25;
-  nCols = 80;
-
-type
-  TCRTMem = array[1..nRows, 1..nCols] of Word;
-
-procedure KernelInit(BootTable : Pointer); stdcall; alias : 'kernelinit';
+procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
 var
   vBootTable : ^TBootTable;
-  vCRTMem : ^TCRTMem;
   vCursor : Word;
 
 begin
   vBootTable := BootTable;
-  vCRTMem := Pointer((vBootTable^.CRTSeg) shl 4);
 
+  GrossInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
+
+  GrossTextColor(LightGreen);
+  GrossTextBackground(Blue);
+  GrossClrLine;
+
+  GrossWriteStr('Kernel UP ');
+
+  GrossTextColor(Yellow);
   vCursor := 0;
 
   while true do {não volte a kwrap}
   begin
-    vCRTMem^[1, 70] := vCursor;
+    GrossWriteChar(Char(vCursor));
     Inc(vCursor);
   end;
 end;
