@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit principal do compilador, crosscompiler, que substitui a RTL normal.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 07/05/2013
+  Versao: 0.2
+  Data: 10/05/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc system.pas
@@ -35,6 +35,8 @@
 ===========================================================================}
 
 unit System;
+
+{$mode objfpc} // Obrigatorio por usar out-parameters
 
 interface
 
@@ -46,6 +48,9 @@ type
   PWord = ^Word;
   PDWord = ^DWord;
 
+  PChar = ^Char;
+  PString = ^ShortString;
+
 
   procedure Move(const Src; var Dest; Count : LongInt);
 
@@ -53,6 +58,16 @@ type
   procedure FillByte(var X; Count : LongInt; Value : Byte);
   procedure FillWord(var X; Count : LongInt; Value : Word);
   procedure FillDWord(var X; Count : LongInt; Value : DWord);
+
+
+  procedure fpc_shortstr_assign(Len : LongInt; SSrc, SDest : Pointer);
+    register; compilerproc;
+
+  procedure fpc_shortstr_to_shortstr(out Res: ShortString; const SSrc: ShortString);
+    register; compilerproc;
+
+  procedure fpc_shortstr_concat(var DestStr : ShortString; const Src1, Src2 : ShortString);
+    register; compilerproc;
 
 
 implementation
@@ -196,6 +211,79 @@ begin
       Dec(Count);
     end;
   end;
+end;
+
+procedure fpc_shortstr_assign(Len : LongInt; SSrc, SDest : Pointer);
+  register; compilerproc;
+  alias : 'FPC_SHORTSTR_ASSIGN';
+
+var
+  LenSrc : Byte;
+
+begin
+  LenSrc := Length(PString(SSrc)^);
+
+  if (LenSrc < Len) then
+    Len := LenSrc;
+
+  Move(SSrc^, SDest^, Len + 1);
+
+  if (LenSrc > Len) then
+    PChar(SDest)^ := Char(Len);
+end;
+
+procedure fpc_shortstr_to_shortstr(out Res: ShortString; const SSrc: ShortString);
+  register; compilerproc;
+  alias : 'FPC_SHORTSTR_TO_SHORTSTR';
+
+var
+  LenSrc : Byte;
+
+begin
+  LenSrc := Length(SSrc);
+
+  { Da "Warning: unreachable code" porque High(Res) sempre da 255, o limite do byte,
+  * e o compilador otimiza if LenSrc > 255 then -> if false then, eliminando o codigo}
+
+  if LenSrc > High(Res) then
+    LenSrc := High(Res);
+
+  Move(SSrc[0], Res[0], LenSrc + 1);
+  Res[0] := Char(LenSrc);
+end;
+
+procedure fpc_shortstr_concat(var DestStr : ShortString; const Src1, Src2 : ShortString);
+  register; compilerproc;
+  alias : 'FPC_SHORTSTR_CONCAT';
+
+var
+  LenSrc1, LenSrc2, LenDest : LongInt;
+
+begin
+  LenSrc1 := Length(Src1);
+  LenSrc2 := Length(Src2);
+  LenDest := High(DestStr);
+
+  if ((LenSrc1 + LenSrc2) > LenDest) then
+    LenSrc2 := LenDest - LenSrc1;
+
+  if (@DestStr = @Src1) then
+    // Somente adiciona
+    Move(Src2[1], DestStr[LenSrc1 + 1], LenSrc2)
+  else
+    if (@DestStr = @Src2) then
+    begin
+      // Copia para cima e adiciona
+      Move(DestStr[1], DestStr[LenSrc1 + 1], LenSrc2);
+      Move(Src1[1], DestStr[1], LenSrc1);
+    end
+    else
+    begin
+      Move(Src1[1], DestStr[1], LenSrc1);
+      Move(Src2[1], DestStr[LenSrc1 + 1], LenSrc2);
+    end;
+
+  DestStr[0] := Char(LenSrc1 + LenSrc2);
 end;
 
 

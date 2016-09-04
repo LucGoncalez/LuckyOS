@@ -27,8 +27,8 @@
 #   Arquivo de shell scritp que tem por funcao compilar e criar a imagem do
 # kernel em uma unica operacao.
 # --------------------------------------------------------------------------
-# Versao: 0.2
-# Data: 07/05/2013
+# Versao: 0.3
+# Data: 10/05/2013
 # --------------------------------------------------------------------------
 # Executar: Executado em um terminal
 # > ./build
@@ -39,7 +39,7 @@ finalfiles="*.bin *.map"
 objfiles="*.o *.ppu"
 
 # Lista de arquivos usado pelo ld
-inputfiles="kernel.o system.o grosscrt.o"
+inputfiles="kernel.o system.o sysutils.o krnltty.o grosscrt.o"
 
 # Variaveis usadas no FPC
 fpcName="ppc386"

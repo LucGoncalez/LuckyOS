@@ -21,67 +21,83 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit Kernel.pas
+  Unit SysUtils.pas
   --------------------------------------------------------------------------
-  Unit principal do kernel.
+  Unit SysUtils, crosscompiler, que substitui a RTL normal.
   --------------------------------------------------------------------------
-  Versao: 0.2
+  Versao: 0.1
   Data: 10/05/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
-  > fpc kernel.pas
+  > fpc sysutils.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
 
-unit kernel;
+unit SysUtils;
 
 interface
 
-  procedure KernelInit(BootTable : Pointer);
+  function IntToStr(Value : LongInt) : ShortString;
+  function IntToStr(Value : LongWord) : ShortString;
+
 
 implementation
 
-uses BootBT32, KrnlTTY;
 
-procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
+function IntToStr(Value : LongInt) : ShortString;
 var
-  vBootTable : ^TBootTable;
-  vCursor : LongWord;
-  X, Y : Byte;
-  vVersion : ShortString;
+  Neg : Boolean;
+  Temp : ShortString;
+  Result : ShortString;
+  I : Byte;
 
 begin
-  vBootTable := BootTable;
-  vVersion := '0.3';
+  Neg := (Value < 0);
 
-  KTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
+  if Neg then
+  Value := 0 - Value;
 
-  KTTYTextColor(Yellow);
-  KTTYTextBackground(Green);
-  KTTYClrLine;
+  Temp := '';
 
-  KTTYWrite('Kernel UP - LOS (Versao ');
-  KTTYWrite(vVersion);
-  KTTYWrite(')');
-
-  KTTYNormVideo;
-  KTTYLineFeed(2);
-
-  KTTYWrite('Contador: ');
-
-  X := KTTYWhereX;
-  Y := KTTYWhereY;
-
-  KTTYTextColor(Yellow);
-  vCursor := 0;
-
-  while true do {não volte a kwrap}
+  while (Value > 0) do
   begin
-    KTTYGotoXY(X, Y);
-    KTTYWrite(vCursor);
-    Inc(vCursor);
+    Temp := Temp + Char((Value mod 10) + Ord('0'));
+    Value := Value div 10;
   end;
+
+  if Neg then
+    Temp := Temp + '-';
+
+  Result := '';
+
+  for I := Length(Temp) downto 1 do
+    Result := Result + Temp[I];
+
+  IntToStr := Result;
+end;
+
+function IntToStr(Value : LongWord) : ShortString;
+var
+  Temp : ShortString;
+  Result : ShortString;
+  I : Byte;
+
+begin
+  Temp := '';
+
+  while (Value > 0) do
+  begin
+    Temp := Temp + Char((Value mod 10) + Ord('0'));
+    Value := Value div 10;
+  end;
+
+  Result := '';
+
+  for I := Length(Temp) downto 1 do
+    Result := Result + Temp[I];
+
+  IntToStr := Result;
 end;
 
 end.
