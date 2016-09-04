@@ -27,8 +27,8 @@
 ;
 ; Ele "roda" um caracter na primeira linha, coluna 70.
 ; --------------------------------------------------------------------------
-; Versao: 0.0 (pkernel v0.6)
-; Data: 23/04/2013
+; Versao: 0.1 (pkernel v0.7)
+; Data: 14/06/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f bin -o kernel.bin kernel.asm
@@ -66,7 +66,7 @@
   HeapSize    EQU 0x00000000  ; Extensivel
 
 ; constante
-  AddrVideoSeg  EQU 23
+  AddrVideoSeg  EQU 24
 
 SECTION .text
 
