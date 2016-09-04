@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.14.1
-  Data: 27/04/2013
+  Versao: 0.14.2
+  Data: 14/06/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -1210,7 +1210,8 @@ procedure ConfigBootTable;
 begin
   {assinatura da tabela}
   vBootTable.LOSSign := cLOSSign;
-  vBootTable.BTSign := CBTSign;
+  vBootTable.BTSign := cBTSign;
+  vBootTable.Version := cBTVersion;
   {dados}
   vBootTable.CPULevel := Byte(vCPUType);
   vBootTable.LowMemory := vLowMemory;
