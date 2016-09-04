@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit principal do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 07/05/2013
+  Versao: 0.2
+  Data: 10/05/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernel.pas
@@ -42,30 +42,44 @@ interface
 
 implementation
 
-uses BootBT32, GrossCRT;
+uses BootBT32, KrnlTTY;
 
 procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
 var
   vBootTable : ^TBootTable;
-  vCursor : Word;
+  vCursor : LongWord;
+  X, Y : Byte;
+  vVersion : ShortString;
 
 begin
   vBootTable := BootTable;
+  vVersion := '0.3';
 
-  GrossInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
+  KTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
 
-  GrossTextColor(LightGreen);
-  GrossTextBackground(Blue);
-  GrossClrLine;
+  KTTYTextColor(Yellow);
+  KTTYTextBackground(Green);
+  KTTYClrLine;
 
-  GrossWriteStr('Kernel UP ');
+  KTTYWrite('Kernel UP - LOS (Versao ');
+  KTTYWrite(vVersion);
+  KTTYWrite(')');
 
-  GrossTextColor(Yellow);
+  KTTYNormVideo;
+  KTTYLineFeed(2);
+
+  KTTYWrite('Contador: ');
+
+  X := KTTYWhereX;
+  Y := KTTYWhereY;
+
+  KTTYTextColor(Yellow);
   vCursor := 0;
 
   while true do {não volte a kwrap}
   begin
-    GrossWriteChar(Char(vCursor));
+    KTTYGotoXY(X, Y);
+    KTTYWrite(vCursor);
     Inc(vCursor);
   end;
 end;
