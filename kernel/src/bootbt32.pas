@@ -28,8 +28,8 @@
     Este arquvivo eh uma variacao do BootBT.pas para ser compilado mais
   facilmente pelo FPC sem dependencias vazias.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 29/04/2013
+  Versao: 0.1.1
+  Data: 14/06/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc bootbt.pas
@@ -55,6 +55,7 @@ type
     {assinatura da tabela}
     LOSSign : TLOSSign;
     BTSign : TBTSign;
+    Version : Byte;
     {dados}
     CPULevel : Byte;
     LowMemory : DWord;
@@ -78,6 +79,7 @@ type
 const
   cLOSSign  : TLOSSign  = ('L', 'O', 'S', #0);
   cBTSign   : TBTSign   = ('B', 'B', 'T', #0);
+  cBTVersion = 1 ;
 
 implementation
 
