@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit principal do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 10/05/2013
+  Versao: 0.3
+  Data: 06/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernel.pas
@@ -40,48 +40,80 @@ interface
 
   procedure KernelInit(BootTable : Pointer);
 
+
 implementation
 
-uses BootBT32, KrnlTTY;
+uses BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO, SystemDef, TTYsDef;
+
+
+const
+  cKernelName = 'LOS-KERNEL';
+  cKernelVersion = '0.4';
+
+
+  { Procedimentos internos (forward) }
+  procedure KernelIdle; forward;
+
 
 procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
 var
   vBootTable : ^TBootTable;
-  vCursor : LongWord;
-  X, Y : Byte;
-  vVersion : ShortString;
 
 begin
+  // Inicializa driver de video/terminal
   vBootTable := BootTable;
-  vVersion := '0.3';
+  GrossTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
 
-  KTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
+  // Abre StdIn : fd = 0
+  if (FOpen('/dev/null', [fmRead, fmWrite]) <> StdIn) or not CAssign(StdIn) then
+    Abort;
 
-  KTTYTextColor(Yellow);
-  KTTYTextBackground(Green);
-  KTTYClrLine;
+  // Abre StdOut : fd = 1
+  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdOut) or not CAssign(StdOut) then
+    Abort;
 
-  KTTYWrite('Kernel UP - LOS (Versao ');
-  KTTYWrite(vVersion);
-  KTTYWrite(')');
+  // Abre StdErr : fd = 2
+  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdErr) or not CAssign(StdErr) then
+    Abort;
 
-  KTTYNormVideo;
-  KTTYLineFeed(2);
+  CSetColor(Yellow);
+  CSetBackground(Green);
+  CClrLine;
 
-  KTTYWrite('Contador: ');
+  CWrite('Kernel UP: ' + cKernelName + '(v');
+  CWrite(cKernelVersion);
+  CWrite(')');
 
-  X := KTTYWhereX;
-  Y := KTTYWhereY;
+  KernelIdle;
+end;
 
-  KTTYTextColor(Yellow);
-  vCursor := 0;
 
-  while true do {não volte a kwrap}
+  { Procedimentos internos }
+
+procedure KernelIdle;
+var
+  X, Y : Byte;
+  vContador : LongWord;
+
+begin
+  CSetNormVideo;
+  CLineFeed(2);
+  CWriteln('Entrado em IDLE...');
+  CWrite('Contador: ');
+
+  X := CWhereX;
+  Y := CWhereY;
+
+  CSetColor(Yellow);
+  vContador := 0;
+
+  while True do
   begin
-    KTTYGotoXY(X, Y);
-    KTTYWrite(vCursor);
-    Inc(vCursor);
+    CGotoXY(X, Y);
+    CWrite(vContador);
+    Inc(vContador);
   end;
 end;
+
 
 end.
