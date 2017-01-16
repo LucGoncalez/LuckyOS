@@ -21,99 +21,44 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit Kernel.pas
+  Unit SystemDef.pas
   --------------------------------------------------------------------------
-  Unit principal do kernel.
+  Unit de definicoes gerais do Sistema.
   --------------------------------------------------------------------------
-  Versao: 0.3
+  Versao: 0.1
   Data: 06/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
-  > fpc kernel.pas
+  > fpc systemdef.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
 
-unit kernel;
+unit SystemDef;
 
 interface
 
-  procedure KernelInit(BootTable : Pointer);
+uses DebugInfo;
+
+
+type
+  // Modos de abertura de arquivos
+  TFileModes = (fmRead, fmWrite);
+  TFileMode = set of TFileModes;
+
+  // Modos de desligamento
+  TShutDownModes = (sdHalt, sdReboot, sdForce);
+  TShutDownMode = set of TShutDownModes;
+
+  // Registro usado por SysAbort
+  PAbortRec = ^TAbortRec;
+  TAbortRec = record
+    StackLevels : LongWord;
+    Basic : TDebugBas;
+    Stack : TDebugStack;
+  end;
 
 
 implementation
-
-uses BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO, SystemDef, TTYsDef;
-
-
-const
-  cKernelName = 'LOS-KERNEL';
-  cKernelVersion = '0.4';
-
-
-  { Procedimentos internos (forward) }
-  procedure KernelIdle; forward;
-
-
-procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
-var
-  vBootTable : ^TBootTable;
-
-begin
-  // Inicializa driver de video/terminal
-  vBootTable := BootTable;
-  GrossTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
-
-  // Abre StdIn : fd = 0
-  if (FOpen('/dev/null', [fmRead, fmWrite]) <> StdIn) or not CAssign(StdIn) then
-    Abort;
-
-  // Abre StdOut : fd = 1
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdOut) or not CAssign(StdOut) then
-    Abort;
-
-  // Abre StdErr : fd = 2
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdErr) or not CAssign(StdErr) then
-    Abort;
-
-  CSetColor(Yellow);
-  CSetBackground(Green);
-  CClrLine;
-
-  CWrite('Kernel UP: ' + cKernelName + '(v');
-  CWrite(cKernelVersion);
-  CWrite(')');
-
-  KernelIdle;
-end;
-
-
-  { Procedimentos internos }
-
-procedure KernelIdle;
-var
-  X, Y : Byte;
-  vContador : LongWord;
-
-begin
-  CSetNormVideo;
-  CLineFeed(2);
-  CWriteln('Entrado em IDLE...');
-  CWrite('Contador: ');
-
-  X := CWhereX;
-  Y := CWhereY;
-
-  CSetColor(Yellow);
-  vContador := 0;
-
-  while True do
-  begin
-    CGotoXY(X, Y);
-    CWrite(vContador);
-    Inc(vContador);
-  end;
-end;
-
 
 end.

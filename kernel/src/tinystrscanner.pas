@@ -21,99 +21,89 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit Kernel.pas
+  Unit TinyStrScanner.pas
   --------------------------------------------------------------------------
-  Unit principal do kernel.
+  Unit Scaner de strings simples.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 06/09/2013
+  Versao: 0.1
+  Data: 03/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
-  > fpc kernel.pas
+  > fpc tinystrscanner.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
 
-unit kernel;
+unit TinyStrScanner;
 
 interface
 
-  procedure KernelInit(BootTable : Pointer);
+  function GetSubStr(const S : ShortString; var Pos : SInt; Delim : Char) : ShortString;
+  function ReadInteger(const S : ShortString; var Pos : SInt) : SInt;
 
 
 implementation
 
-uses BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO, SystemDef, TTYsDef;
+uses SysUtils;
 
 
-const
-  cKernelName = 'LOS-KERNEL';
-  cKernelVersion = '0.4';
-
-
-  { Procedimentos internos (forward) }
-  procedure KernelIdle; forward;
-
-
-procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
+function GetSubStr(const S : ShortString; var Pos : SInt; Delim : Char) : ShortString;
 var
-  vBootTable : ^TBootTable;
+  vTemp : ShortString;
+  vLen : SInt;
 
 begin
-  // Inicializa driver de video/terminal
-  vBootTable := BootTable;
-  GrossTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
+  vTemp := '';
+  vLen := Length(S);
 
-  // Abre StdIn : fd = 0
-  if (FOpen('/dev/null', [fmRead, fmWrite]) <> StdIn) or not CAssign(StdIn) then
-    Abort;
-
-  // Abre StdOut : fd = 1
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdOut) or not CAssign(StdOut) then
-    Abort;
-
-  // Abre StdErr : fd = 2
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdErr) or not CAssign(StdErr) then
-    Abort;
-
-  CSetColor(Yellow);
-  CSetBackground(Green);
-  CClrLine;
-
-  CWrite('Kernel UP: ' + cKernelName + '(v');
-  CWrite(cKernelVersion);
-  CWrite(')');
-
-  KernelIdle;
-end;
-
-
-  { Procedimentos internos }
-
-procedure KernelIdle;
-var
-  X, Y : Byte;
-  vContador : LongWord;
-
-begin
-  CSetNormVideo;
-  CLineFeed(2);
-  CWriteln('Entrado em IDLE...');
-  CWrite('Contador: ');
-
-  X := CWhereX;
-  Y := CWhereY;
-
-  CSetColor(Yellow);
-  vContador := 0;
-
-  while True do
+  while (Pos <= vLen) and (S[Pos] <> Delim) do
   begin
-    CGotoXY(X, Y);
-    CWrite(vContador);
-    Inc(vContador);
+    vTemp := vTemp + S[Pos];
+    Inc(Pos);
   end;
+
+  if (Pos <= vLen) and (S[Pos] = Delim) then
+    Inc(Pos); // Despreza o Delim
+
+  GetSubStr := vTemp;
 end;
 
+function ReadInteger(const S : ShortString; var Pos : SInt) : SInt;
+var
+  vTemp : ShortString;
+  vLen : SInt;
+  vNeg : Boolean;
+
+begin
+  vLen := Length(S);
+
+  // Verifica se negativo
+  if (Pos <= vLen) and (S[Pos] = '-') then
+  begin
+    vNeg := True;
+    Inc(Pos);
+  end
+  else
+    vNeg := False;
+
+  vTemp := '';
+
+  while (Pos <= vLen) do
+    if (S[Pos] >= '0') and (S[Pos] <= '9') then
+    begin
+      vTemp := vTemp + S[Pos];
+      Inc(Pos);
+    end
+    else
+      Break;
+
+  if(vTemp = '') then
+    ReadInteger := 0
+  else
+    if vNeg then
+      ReadInteger := - StrToInt(vTemp)
+    else
+      ReadInteger := StrToInt(vTemp);
+end;
 
 end.

@@ -21,97 +21,99 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit Kernel.pas
+  Unit StdIO.pas
   --------------------------------------------------------------------------
-  Unit principal do kernel.
+  Unit biblioteca de entrada e saida padrao.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 06/09/2013
+  Versao: 0.1
+  Data: 05/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
-  > fpc kernel.pas
+  > fpc stdio.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
 
-unit kernel;
+unit StdIO;
 
 interface
 
-  procedure KernelInit(BootTable : Pointer);
+uses SystemDef;
+
+
+  function FOpen(const Name : ShortString; Mode : TFileMode) : SInt;
+  function FClose(FD : UInt) : Boolean;
+
+  function FRead(FD : UInt; var Buffer; Count : SInt) : SInt;
+  function FWrite(FD : UInt; const Buffer; Count : SInt) : SInt;
 
 
 implementation
 
-uses BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO, SystemDef, TTYsDef;
+uses SysCalls, ErrorsDef;
 
 
-const
-  cKernelName = 'LOS-KERNEL';
-  cKernelVersion = '0.4';
-
-
-  { Procedimentos internos (forward) }
-  procedure KernelIdle; forward;
-
-
-procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
+function FOpen(const Name : ShortString; Mode : TFileMode) : SInt;
 var
-  vBootTable : ^TBootTable;
+  vName : ShortString;
+  vFD : SInt;
 
 begin
-  // Inicializa driver de video/terminal
-  vBootTable := BootTable;
-  GrossTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
+  vName := Name + #0;
 
-  // Abre StdIn : fd = 0
-  if (FOpen('/dev/null', [fmRead, fmWrite]) <> StdIn) or not CAssign(StdIn) then
-    Abort;
+  vFD := SysOpen(@vName[1], Mode);
 
-  // Abre StdOut : fd = 1
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdOut) or not CAssign(StdOut) then
-    Abort;
-
-  // Abre StdErr : fd = 2
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdErr) or not CAssign(StdErr) then
-    Abort;
-
-  CSetColor(Yellow);
-  CSetBackground(Green);
-  CClrLine;
-
-  CWrite('Kernel UP: ' + cKernelName + '(v');
-  CWrite(cKernelVersion);
-  CWrite(')');
-
-  KernelIdle;
+  if (vFD < 0) then
+  begin
+    ErrorNo := - vFD;
+    FOpen := -1;
+  end
+  else
+    FOpen := vFD;
 end;
 
-
-  { Procedimentos internos }
-
-procedure KernelIdle;
+function FClose(FD : UInt) : Boolean;
 var
-  X, Y : Byte;
-  vContador : LongWord;
+  vSysRes : SInt;
 
 begin
-  CSetNormVideo;
-  CLineFeed(2);
-  CWriteln('Entrado em IDLE...');
-  CWrite('Contador: ');
+  vSysRes := SysClose(FD);
 
-  X := CWhereX;
-  Y := CWhereY;
+  FClose := (vSysRes = 0);
 
-  CSetColor(Yellow);
-  vContador := 0;
+  if not FClose then
+    ErrorNo := - vSysRes;
+end;
 
-  while True do
+function FRead(FD : UInt; var Buffer; Count : SInt) : SInt;
+var
+  vSysRes : SInt;
+
+begin
+  vSysRes := SysRead(FD, @Buffer, Count);
+
+  if (vSysRes >= 0) then
+    FRead := vSysRes
+  else
   begin
-    CGotoXY(X, Y);
-    CWrite(vContador);
-    Inc(vContador);
+    ErrorNo := - vSysRes;
+    FRead := -1;
+  end;
+end;
+
+function FWrite(FD : UInt; const Buffer; Count : SInt) : SInt;
+var
+  vSysRes : SInt;
+
+begin
+  vSysRes := SysWrite(FD, @Buffer, Count);
+
+  if (vSysRes >= 0) then
+    FWrite := vSysRes
+  else
+  begin
+    ErrorNo := - vSysRes;
+    FWrite := -1;
   end;
 end;
 

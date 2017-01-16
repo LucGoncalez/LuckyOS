@@ -21,98 +21,84 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit Kernel.pas
+  Unit StdLib.pas
   --------------------------------------------------------------------------
-  Unit principal do kernel.
+  Unit biblioteca padrao.
   --------------------------------------------------------------------------
-  Versao: 0.3
+  Versao: 0.1
   Data: 06/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
-  > fpc kernel.pas
+  > fpc stdlib.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
 
-unit kernel;
+unit StdLib;
 
 interface
 
-  procedure KernelInit(BootTable : Pointer);
+uses ErrorsDef;
+
+
+  procedure Abort;
+  procedure Abort(Error : TErrorCode);
 
 
 implementation
 
-uses BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO, SystemDef, TTYsDef;
+uses SystemDef, SysCalls, DebugInfo;
 
 
-const
-  cKernelName = 'LOS-KERNEL';
-  cKernelVersion = '0.4';
-
-
-  { Procedimentos internos (forward) }
-  procedure KernelIdle; forward;
-
-
-procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
 var
-  vBootTable : ^TBootTable;
+  vAborting : Boolean = False;
+  vAbortInfo : TAbortRec;
+
+
+procedure Abort;
+const
+  cSkipFrames = 1; // Pula o Frame da propria Abort
+  cOffsetESP = 0; // Rotina atual nao tem parametro
 
 begin
-  // Inicializa driver de video/terminal
-  vBootTable := BootTable;
-  GrossTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
+  if not vAborting then
+  begin
+    // Evita que uma segunda chamada sobrescreva a primeira
+    vAborting := True;
 
-  // Abre StdIn : fd = 0
-  if (FOpen('/dev/null', [fmRead, fmWrite]) <> StdIn) or not CAssign(StdIn) then
-    Abort;
+    if (TErrorCode(ErrorNo) = ERROR_NONE) then
+      TErrorCode(ErrorNo) := ERROR_UNDEFINED;
 
-  // Abre StdOut : fd = 1
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdOut) or not CAssign(StdOut) then
-    Abort;
+    vAbortInfo.Basic := GetDebugInfo;
+    vAbortInfo.Stack := GetDebugStack(cSkipFrames, cOffsetESP);
+    vAbortInfo.StackLevels := GetSFramesLevels(vAbortInfo.Stack.EBP);
+  end;
 
-  // Abre StdErr : fd = 2
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdErr) or not CAssign(StdErr) then
-    Abort;
-
-  CSetColor(Yellow);
-  CSetBackground(Green);
-  CClrLine;
-
-  CWrite('Kernel UP: ' + cKernelName + '(v');
-  CWrite(cKernelVersion);
-  CWrite(')');
-
-  KernelIdle;
+  SysAbort(TErrorCode(ErrorNo), @vAbortInfo);
 end;
 
-
-  { Procedimentos internos }
-
-procedure KernelIdle;
-var
-  X, Y : Byte;
-  vContador : LongWord;
+procedure Abort(Error : TErrorCode);
+const
+  cSkipFrames = 1; // Pula o Frame da propria Abort
+  cOffsetESP = 4; // TErrorCode = LongWord = 4
 
 begin
-  CSetNormVideo;
-  CLineFeed(2);
-  CWriteln('Entrado em IDLE...');
-  CWrite('Contador: ');
-
-  X := CWhereX;
-  Y := CWhereY;
-
-  CSetColor(Yellow);
-  vContador := 0;
-
-  while True do
+  if not vAborting then
   begin
-    CGotoXY(X, Y);
-    CWrite(vContador);
-    Inc(vContador);
+    // Evita que uma segunda chamada sobrescreva a primeira
+    vAborting := True;
+
+    if (Error = ERROR_NONE) then
+      TErrorCode(ErrorNo) := ERROR_UNDEFINED
+    else
+      TErrorCode(ErrorNo) := Error;
+
+    vAbortInfo.Basic := GetDebugInfo;
+    vAbortInfo.Stack := GetDebugStack(cSkipFrames, cOffsetESP);
+    vAbortInfo.StackLevels := GetSFramesLevels(vAbortInfo.Stack.EBP);
   end;
+
+  SysAbort(TErrorCode(ErrorNo), @vAbortInfo);
 end;
 
 

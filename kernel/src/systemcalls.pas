@@ -21,99 +21,56 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit Kernel.pas
+  Unit SystemCalls.pas
   --------------------------------------------------------------------------
-  Unit principal do kernel.
+  Unit interface de chamadas de sistema do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 06/09/2013
+  Versao: 0.1
+  Data: 05/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
-  > fpc kernel.pas
+  > fpc systemcalls.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
 
-unit kernel;
+unit SystemCalls;
 
 interface
 
-  procedure KernelInit(BootTable : Pointer);
+  function DirectCall(AEAX, AEBX, AECX, AEDX : UInt) : SInt;
 
 
 implementation
 
-uses BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO, SystemDef, TTYsDef;
+uses SysCallsDef, SystemDef, ErrorsDef,
+  KernelLib, FileSystem;
 
 
-const
-  cKernelName = 'LOS-KERNEL';
-  cKernelVersion = '0.4';
-
-
-  { Procedimentos internos (forward) }
-  procedure KernelIdle; forward;
-
-
-procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
-var
-  vBootTable : ^TBootTable;
-
+function DirectCall(AEAX, AEBX, AECX, AEDX : UInt) : SInt;
 begin
-  // Inicializa driver de video/terminal
-  vBootTable := BootTable;
-  GrossTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
+  case TSysCall(AEAX) of
 
-  // Abre StdIn : fd = 0
-  if (FOpen('/dev/null', [fmRead, fmWrite]) <> StdIn) or not CAssign(StdIn) then
-    Abort;
+    {0  Sys_Abort = Error : UInt; AbortRec : PAbortRec}
+    Sys_Abort : KernelPanic(TErrorCode(AEBX), PAbortRec(AECX));
 
-  // Abre StdOut : fd = 1
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdOut) or not CAssign(StdOut) then
-    Abort;
+    {1  Sys_Exit = Status : SInt}
 
-  // Abre StdErr : fd = 2
-  if (FOpen('/dev/grosstty', [fmRead, fmWrite]) <> StdErr) or not CAssign(StdErr) then
-    Abort;
+    {2  Sys_Open = Name : PChar; Mode : TFileMode => SInt}
+    Sys_Open : DirectCall := FileOpen(PChar(AEBX), TFileMode(AECX));
 
-  CSetColor(Yellow);
-  CSetBackground(Green);
-  CClrLine;
+    {3  Sys_Close = FD : UInt => SInt}
+    Sys_Close : DirectCall := FileClose(AEBX);
 
-  CWrite('Kernel UP: ' + cKernelName + '(v');
-  CWrite(cKernelVersion);
-  CWrite(')');
+    {4  Sys_Read = FD : UInt; Buffer : Pointer; Count : SInt => SInt}
+    Sys_Read : DirectCall := FileRead(AEBX, Pointer(AECX), SInt(AEDX));
 
-  KernelIdle;
-end;
+    {5  Sys_Write = FD : UInt; Buffer : Pointer; Count : SInt => SInt}
+    Sys_Write : DirectCall := FileWrite(AEBX, Pointer(AECX), SInt(AEDX));
 
-
-  { Procedimentos internos }
-
-procedure KernelIdle;
-var
-  X, Y : Byte;
-  vContador : LongWord;
-
-begin
-  CSetNormVideo;
-  CLineFeed(2);
-  CWriteln('Entrado em IDLE...');
-  CWrite('Contador: ');
-
-  X := CWhereX;
-  Y := CWhereY;
-
-  CSetColor(Yellow);
-  vContador := 0;
-
-  while True do
-  begin
-    CGotoXY(X, Y);
-    CWrite(vContador);
-    Inc(vContador);
+  else
+    KernelPanic(ERROR_SYSCALL_INVALID_CALL, nil);
   end;
 end;
-
 
 end.
