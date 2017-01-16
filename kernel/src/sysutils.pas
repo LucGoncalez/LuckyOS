@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit SysUtils, crosscompiler, que substitui a RTL normal.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 10/05/2013
+  Versao: 0.2
+  Data: 06/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc sysutils.pas
@@ -41,10 +41,21 @@ interface
   function IntToStr(Value : LongInt) : ShortString;
   function IntToStr(Value : LongWord) : ShortString;
 
+  function IntToHex(Value : LongInt; Digits : Byte) : ShortString;
+  function IntToHex(Value : LongWord; Digits : Byte) : ShortString;
+
+  function IntToHexX(Value : LongInt; Digits : Byte) : ShortString;
+  function IntToHexX(Value : LongWord; Digits : Byte) : ShortString;
+
+  function StrToInt(S : ShortString) : LongInt;
+  function StrToIntDef(S : ShortString; Default : LongInt) : LongInt;
+
 
 implementation
 
+uses StdLib, ErrorsDef;
 
+// Converte numero com sinal para string
 function IntToStr(Value : LongInt) : ShortString;
 var
   Neg : Boolean;
@@ -66,8 +77,11 @@ begin
     Value := Value div 10;
   end;
 
-  if Neg then
+  if Neg and (Temp <> '') then
     Temp := Temp + '-';
+
+  if (Temp = '') then
+    Temp := '0';
 
   Result := '';
 
@@ -77,6 +91,7 @@ begin
   IntToStr := Result;
 end;
 
+// Converte numero sem sinal para string
 function IntToStr(Value : LongWord) : ShortString;
 var
   Temp : ShortString;
@@ -92,6 +107,9 @@ begin
     Value := Value div 10;
   end;
 
+  if (Temp = '') then
+    Temp := '0';
+
   Result := '';
 
   for I := Length(Temp) downto 1 do
@@ -99,5 +117,86 @@ begin
 
   IntToStr := Result;
 end;
+
+// Converte numero para equivalente hex (sem sufixo)
+function IntToHex(Value : LongInt; Digits : Byte) : ShortString;
+begin
+  IntToHex := IntToHex(LongWord(Value), Digits);
+end;
+
+// Converte numero para equivalente hex (sem sufixo)
+function IntToHex(Value : LongWord; Digits : Byte) : ShortString;
+var
+  Temp : ShortString;
+  Result : ShortString;
+  I : Byte;
+
+const
+  HexValues = '0123456789ABCDEF';
+
+begin
+  Temp := '';
+
+  while (Value > 0) do
+  begin
+    Temp := Temp + HexValues[(Value mod $10) + 1];
+    Value := Value div $10;
+  end;
+
+  while (Length(Temp) < Digits) do
+    Temp := Temp + '0';
+
+  Result := '';
+
+  for I := Length(Temp) downto 1 do
+    Result := Result + Temp[I];
+
+  IntToHex := Result;
+end;
+
+
+// Converte numero para equivalente hex (com sufixo)
+function IntToHexX(Value : LongInt; Digits : Byte) : ShortString;
+begin
+  IntToHexX := '0x' + IntToHex(Value, Digits);
+end;
+
+// Converte numero para equivalente hex (com sufixo)
+function IntToHexX(Value : LongWord; Digits : Byte) : ShortString;
+begin
+  IntToHexX := '0x' + IntToHex(Value, Digits);
+end;
+
+
+// Converte string numerica para numero
+function StrToInt(S : ShortString) : LongInt;
+var
+  vError : Word;
+  vTemp : LongInt;
+
+begin
+  Val(S, vTemp, vError);
+
+  if (vError = 0) then
+    StrToInt := vTemp
+  else
+    Abort(ERROR_SYSUTILS_INVALID_INTEGER);
+end;
+
+// Converte string numerica para numero (com default)
+function StrToIntDef(S : ShortString; Default : LongInt) : LongInt;
+var
+  vError : Word;
+  vTemp : LongInt;
+
+begin
+  Val(S, vTemp, vError);
+
+  if (vError = 0) then
+    StrToIntDef := vTemp
+  else
+    StrToIntDef := Default;
+end;
+
 
 end.
