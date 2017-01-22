@@ -21,42 +21,57 @@
   Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
   GNU e obtenha sua licenca: http://www.gnu.org/
 ============================================================================
-  Unit BootKT.pas
+  Unit KrnlHdr.pas
   --------------------------------------------------------------------------
-  Esta Unit contem a tabela de boot fornecida pelo kernel.
+  Esta Unit possui a estrutura do cabecalho do arquivo do kernel.
   --------------------------------------------------------------------------
   Versao: 0.1
-  Data: 21/04/2013
+  Data: 18/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
-  > tpc bootkt.pas
+  > tpc krnlhdr.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
 
-unit BootKT;
+unit KrnlHdr;
 
 interface
 
-uses Basic;
+uses  Basic, LosHdr;
 
 type
-  TKernelTable = packed record
-    JumpInst    : Byte;
-    JumpAddr    : DWord;
-    LOS_Sign    : DWord;
-    KT_Sign     : DWord;
-    KT_Vers     : Byte;
-    CPU_Min     : Byte;
-    MemAlign    : Byte;
-    EntryPoint  : DWord;
-    StackSize   : DWord;
-    HeapSize    : DWord;
+  { Metadados independente de arquitetura }
+  PKrnlHdrArch = ^TKrnlHdrArch;
+  TKrnlHdrArch = packed record
+    ArchBase : Byte;
+    ArchBits : Byte;
+  end;
+
+  { Metadados para Intel x86 de 32 bits v1.0}
+  PKrnlHdr_x86_32 = ^TKrnlHdr_x86_32;
+  TKrnlHdr_x86_32 = packed record
+    {Metadados - qrquitetura}
+    Arch : TKrnlHdrArch; {"herda" o tipo TKrnlImgArch }
+    {Metadados - requisitos}
+    CPUModel  : Byte; {Informa o modelo da CPUMin x86}
+    CPUMode   : Byte; {Informa o modo de operacao x86}
+    MemAlign  : Byte; {Bits 2^X}
+    StackSize : DWord;
+    HeapSize  : DWord;
+    {Metadados - imagem}
+    KernelStart : DWord; {Endereco de inicio da imagem em memoria}
+    KernelEnd   : DWord; {Endereco de termino da imagem em memoria}
+    EntryPoint  : DWord; {Endereco do procedimento principal}
+    {Metadados - segmentos}
+    Code  : DWord; {Inicio do segmento de codigo}
+    Data  : DWord; {Inicio do segmento de dados}
+    BSS   : DWord; {Inicio do segmento BSS}
   end;
 
 const
-  cLOS_Sign = $00534F4C; {'LOS'#0 da direita para a esquerda}
-  cKT_Sign = $00544B42; {'BKT'#0 da direita para a esquerda}
+  cKrnlHdrVersion : TTypeVersion = (Major : 1; Minor : 0);
+
 
 implementation
 

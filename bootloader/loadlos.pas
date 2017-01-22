@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.14.2
-  Data: 14/06/2013
+  Versao: 0.15
+  Data: 22/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -42,21 +42,27 @@
 
 program LoadLOS;
 
-uses CopyRigh, Basic, CPUInfo, MemInfo, CRTInfo, EStrings, BootKT, BootBT,
-  A20, Intrpts, BootAux,  PM, CRT;
+uses CRT, CopyRigh, Basic, EStrings, BootAux, BootBT, PM, Intrpts, A20,
+  CPUInfo, MemInfo, CRTInfo, LosHdr, KrnlHdr;
 
 {Constantes gerais}
 const
   cKernelName = 'kernel.bin';
   cCPUMin = CT80386;  {minimo para o boot}
   cCPUMax = CT80586;  {maximo detectavel}
-  cHighMemoryMin = 1024; {1M}
+  cHighMemoryMin = 1024; {1024K => 1M}
   cMaxBuffer = $FFF0;
+  cDebugMode = 0;
+  {
+    0 = Sem debug;
+    1 = Debug rapido;
+    2 = Debug completo;
+  }
 
 {Variaveis globais}
 var
-  {detectado}
-  vKernelSize : DWord;
+  { * detectado * }
+  vFileSize : DWord;
   vCPUType :TCPUType;
   vLowMemory : DWord;
   vHighMemory : DWord;
@@ -66,24 +72,24 @@ var
   vA20Bios : Boolean;
   vA20KBC : Boolean;
   vA20Fast : Boolean;
-  {fornecido pelo kernel}
-  vCPUMin : TCPUType;
-  vMemAlign : Byte;
-  vEntryPoint : DWord;
-  vStackSize : DWord;
-  vHeapSize : DWord;
-  {estrutural}
+  { * fornecido pelo kernel * }
+  vKernelTable : TKrnlHdr_x86_32;
+  { * estrutural * }
   GDT : array[0..3] of TDescrSeg;
   GDTR : TGdtR;
   vCodeDesc : Word;
   vDataDesc : Word;
   vStackDesc : Word;
-  {calculado}
+  { * calculado * }
   vStackStart : DWord;
   vHeapStart : DWord;
-  {passado ao kernel}
+  vFreeLowMemStart : DWord;
+  vFreeLowMemSize : DWord;
+  vFreeHighMemStart : DWord;
+  vFreeHighMemSize : DWord;
+  { * passado ao kernel * }
   vBootTable : TBootTable;
-  {interno}
+  { * interno * }
   vDebug : Boolean;
   vKernelName : String;
 
@@ -100,7 +106,7 @@ var
 
 begin
   vSkip := False;
-  vDebug := False;
+  vDebug := (cDebugMode = 2);
   vHelp := False;
   vError := False;
   vWarning := False;
@@ -321,47 +327,91 @@ end;
 {Obtem parametros da imagem do kernel}
 procedure GetKernelParam;
 var
-  vKernel : File;
+  vLOSHeader : PLOSHeader;
   vTeste : Boolean;
-  vKernelTable : TKernelTable;
+  vError : String;
 
 begin
-  {abre arquivo de kernel}
-  Assign(vKernel, vKernelName);
-  Reset(vKernel, 1);
-
-  vKernelSize := FileSize(vKernel);
-
   {verifica se o arquivo contem um cabecalho valido}
-  Write('Verificando cabecalho... ');
+  Write('Verificando imagem... ');
 
-  vTeste := (vKernelSize >= SizeOf(TKernelTable));
+  {obtem o cabecalho}
+  vLOSHeader := GetLOSHeader(vKernelName);
 
+  vError := '';
+  vTeste := (vLOSHeader <> nil);
+
+  {se nao eh arquivo LOS}
+  if not vTeste then
+    vError := 'Arquivo nao eh um arquivo LOS valido';
+
+  {verifica por imagem de kernel}
   if vTeste then
   begin
-    {se o arquivo tem tamanho para conter uma tabela, le a tabela...}
-    BlockRead(vKernel, vKernelTable, SizeOf(TKernelTable));
+    vTeste := (vLOSHeader^.FileType = 'KRNLIMG');
 
-    {verifica se tem o jmp inicial}
-    vTeste := (vKernelTable.JumpInst = $E9);
+    {se nao eh imagem de kernel}
+    if not vTeste then
+      vError := 'Arquivo nao eh uma imagem de kernel (Dado: ' +
+        vLOSHeader^.FileType + ')';
   end;
 
+  {verifica versao}
   if vTeste then
   begin
-    {se jmp ok, verifica assinatura}
-    vTeste := (vKernelTable.LOS_Sign = cLOS_Sign) and (vKernelTable.KT_Sign = cKT_Sign);
+    vTeste := (vLOSHeader^.TypeVersion.Major = cKrnlHdrVersion.Major) and
+      (vLOSHeader^.TypeVersion.Minor = cKrnlHdrVersion.Minor);
+
+    {se versao incorreta}
+    if not vTeste then
+      vError := 'Versao incorreta da imagem (Esperado: ' +
+        IntToStr(cKrnlHdrVersion.Major) + '.' +
+        IntToStr(cKrnlHdrVersion.Minor) + '; Dado: ' +
+        IntToStr(vLOSHeader^.TypeVersion.Major) + '.' +
+        IntToStr(vLOSHeader^.TypeVersion.Minor) + ')';
   end;
 
+  {verifica arquitetura}
   if vTeste then
   begin
-    {se assinaturas ok, verifica versao da tabela}
-    vTeste := (vKernelTable.KT_Vers = 1);
+    vTeste  := (vLOSHeader^.MetaSize >= SizeOf(TKrnlHdrArch)) and
+      (vLOSHeader^.MetaData <> nil);
+
+    if not vTeste then
+      vError := 'Tamanho do MetaDados errado (Esperado >= ' +
+      IntToStr(SizeOf(TKrnlHdrArch)) + '; Dado: ' +
+      IntToStr(vLOSHeader^.MetaSize) + ')';
+
+    if vTeste then
+    begin
+      vTeste := (PKrnlHdrArch(vLOSHeader^.MetaData)^.ArchBase = 0) and
+        (PKrnlHdrArch(vLOSHeader^.MetaData)^.ArchBits = 32);
+
+      {arquitetura incorreta}
+      if not vTeste then
+        vError := 'Arquitetura incorreta (Esperado: 0/32; Dado: ' +
+          IntToStr(PKrnlHdrArch(vLOSHeader^.MetaData)^.ArchBase) + '/' +
+          IntToStr(PKrnlHdrArch(vLOSHeader^.MetaData)^.ArchBits) + ')';
+    end;
+  end;
+
+  {verifica o tamanho do Metadata}
+  if vTeste then
+  begin
+    vTeste := (vLOSHeader^.MetaSize = SizeOf(TKrnlHdr_x86_32));
+
+    {tamanho errado}
+    if not vTeste then
+      vError := 'Tamanho do MetaDados errado (Esperado: ' +
+        IntToStr(SizeOf(TKrnlHdr_x86_32)) + '; Dado: ' +
+        IntToStr(vLOSHeader^.MetaSize) + ')';
   end;
 
   {se falha no cabecalho, termina}
   if not vTeste then
   begin
     Writeln('FALHA');
+    Writeln(vError);
     Writeln('Imagem de kernel invalida. Abortando!');
     Finish;
   end
@@ -369,28 +419,31 @@ begin
     Writeln('OK');
 
   {cabecalho ok, pegando informacoes}
-  vCPUMin := TCPUType(vKernelTable.CPU_Min);
-  vMemAlign := vKernelTable.MemAlign;
-  vEntryPoint := vKernelTable.EntryPoint;
-  vStackSize := vKernelTable.StackSize;
-  vHeapSize := vKernelTable.HeapSize;
+  vKernelTable := PKrnlHdr_x86_32(vLOSHeader^.MetaData)^;
 
   if vDebug then
   begin
-    Writeln;
-    Writeln('Parametros do kernel:');
-
     {mostra valores, util para debug}
     Writeln;
-    Writeln('CPU Minimal:  ', CPUType2Str(vCPUMin));
-    Writeln('Memory Align: ', vMemAlign);
-    Writeln('Entry Point:  0x', DWordToHex2(vEntryPoint));
-    Writeln('Stack Size:   0x', DWordToHex2(vStackSize));
-    Writeln('Heap Size:    0x', DWordToHex2(vHeapSize));
+    Writeln('Parametros do kernel:');
+    Writeln;
+    Writeln('*** Metadados - requisitos ***');
+    Writeln('CPU Model: ', CPUType2Str(TCPUType(vKernelTable.CPUModel)));
+    Writeln('CPU Mode:  ', vKernelTable.CPUMode);
+    Writeln('Memory Align: ', vKernelTable.MemAlign);
+    Writeln('Stack Size: 0x', DWordToHex2(vKernelTable.StackSize));
+    Writeln('Heap Size:  0x', DWordToHex2(vKernelTable.HeapSize));
+    Writeln;
+    Writeln('*** Metadados - imagem ***');
+    Writeln('KernelStart: 0x', DWordToHex2(vKernelTable.KernelStart));
+    Writeln('KernelEnd:   0x', DWordToHex2(vKernelTable.KernelEnd));
+    Writeln('Entry Point: 0x', DWordToHex2(vKernelTable.EntryPoint));
+    Writeln;
+    Writeln('*** Metadados - segmentos ***');
+    Writeln('Code: 0x', DWordToHex2(vKernelTable.Code));
+    Writeln('Data: 0x', DWordToHex2(vKernelTable.Data));
+    Writeln('BSS:  0x', DWordToHex2(vKernelTable.BSS));
   end;
-
-  {fecha arquivo do kernel}
-  Close(vKernel);
 end;
 
 {Verifica se parametros sao correspondidos}
@@ -398,16 +451,16 @@ procedure CheckParam;
 var
   vBlockSize : DWord;
 
-  vHighMemoryIni : DWord;
-  vHighMemoryEnd : DWord;
-  vHighMemoryBSize : DWord;
+  vMemoryIni : DWord;
+  vMemoryEnd : DWord;
+  vMemorySize : DWord;
 
   vFreeMemIni : DWord;
   vFreeMemEnd : DWord;
 
-  vCodeIni : DWord;
-  vCodeEnd : DWord;
-  vCodeSize : DWord;
+  vImgIni : DWord;
+  vImgEnd : DWord;
+  vImgSize : DWord;
 
   vStackHigh : Boolean;
   vStackBSize : DWord;
@@ -415,23 +468,30 @@ var
   vStackEnd : DWord;
 
   vHeapGrow : Boolean;
-  vHeapBSize : DWord;
   vHeapIni : DWord;
   vHeapEnd : DWord;
+  vHeapBSize : DWord;
 
-  vFreeMemStart : DWord;
   vFreeMemBSize : DWord;
   vFreeMemSize  : DWord;
+  vFreeMemStart : DWord;
 
 begin
   { *** verificando a CPU *** }
-  Write('Verificando CPU minima (', CPUType2Str(vCPUMin), '): ');
+  Write('Verificando CPU minima (', CPUType2Str(TCPUType(vKernelTable.CPUModel)), '): ');
 
-  if (vCPUType > vCPUMin) then
+  if (vCPUType > TCPUType(vKernelTable.CPUModel)) then
     Writeln('OK')
   else
   begin
     Writeln('FALHA');
+    Finish;
+  end;
+
+  if (vKernelTable.CPUMode <> 2) then
+    {0-real, 1-pm.segmentado, 2-pm.flat, 3-pm-paginado}
+  begin
+    Writeln('Imagem utiliza o processador em um modo nao suportado. Abortando!');
     Finish;
   end;
 
@@ -444,54 +504,69 @@ begin
   if vDebug then
     Writeln;
 
-  vBlockSize := 1 shl vMemAlign;
+  vBlockSize := 1 shl vKernelTable.MemAlign;
 
-  vHighMemoryIni := ($FFFFF shr vMemAlign) + 1;
-  vHighMemoryEnd := (($100000 + (vHighMemory shl 10)) shr vMemAlign) - 1;
-  vHighMemoryBSize := vHighMemoryEnd - vHighMemoryIni + 1;
+  vMemoryIni := ($FFFFF shr vKernelTable.MemAlign) + 1;
+  vMemoryEnd := (($100000 + (vHighMemory shl 10)) shr vKernelTable.MemAlign) - 1;
+  vMemorySize := vMemoryEnd - vMemoryIni + 1;
 
-  vFreeMemIni := vHighMemoryIni;
-  vFreeMemEnd := vHighMemoryEnd;
+  vFreeMemIni := vMemoryIni;
+  vFreeMemEnd := vMemoryEnd;
 
   if vDebug then
   begin
-    Writeln(' ---------------------------------------------------------------------- ');
+    Writeln(' ------------------------------ Superior ------------------------------ ');
     Writeln(' * Alinhamento : ', vBlockSize, ' bytes');
-    Writeln(' - Tamanho: ', vHighMemory, ' Kbytes [ ', vHighMemoryBSize, ' bloco(s) ]');
+    Writeln(' - Tamanho: ', vHighMemory, ' Kbytes [ ', vMemorySize, ' bloco(s) ]');
   end;
 
-  { *** calculando posicao do bloco de codigo *** }
-  vCodeIni := vEntryPoint shr vMemAlign;
-  vCodeEnd := (vEntryPoint + vKernelSize - 1) shr vMemAlign;
-  vCodeSize := vCodeEnd - vCodeIni + 1;
+  { *** calculando posicao imagem *** }
+  vImgIni := vKernelTable.KernelStart shr vKernelTable.MemAlign;
+  vImgEnd := (vKernelTable.KernelEnd - 1) shr vKernelTable.MemAlign;
+  vImgSize := vImgEnd - vImgIni + 1;
 
   if vDebug then
   begin
-    Writeln(' ------------------------------- Codigo ------------------------------- ');
-    Writeln(' - Ponto de entrada: 0x', DWordToHex2(vEntryPoint));
-    Writeln(' - Tamanho: ', vKernelSize, ' bytes [ ', vCodeSize, ' bloco(s) ]');
+    Writeln(' ------------------------------- Imagem ------------------------------- ');
+    Writeln(' - Inicio: ', DWordToHex2(vKernelTable.KernelStart));
+    Writeln(' - Tamanho: ', vKernelTable.KernelEnd - vKernelTable.KernelStart,
+      ' bytes [ ', vImgSize, ' bloco(s) ]');
+    Writeln(' - Ponto de entrada: 0x', DWordToHex2(vKernelTable.EntryPoint));
   end;
 
-  if (vCodeIni < vFreeMemIni) or (vCodeEnd > vFreeMemEnd) then
+  {verifica se ponto de entrada esta na imagem}
+  if (vKernelTable.EntryPoint < vKernelTable.KernelStart) or
+    (vKernelTable.EntryPoint > vKernelTable.KernelEnd) then
   begin
     if not vDebug then
       Writeln('FALHA');
 
     Writeln;
-    Writeln('Codigo posicionado fora da memoria. Abortando!');
+    Writeln('Ponto de Entrada localizado fora da imagem do Kernel. Abortando!');
+    Finish;
+  end;
+
+  {verifica se tem memoria para a imagem}
+  if (vImgIni < vFreeMemIni) or (vImgEnd > vFreeMemEnd) then
+  begin
+    if not vDebug then
+      Writeln('FALHA');
+
+    Writeln;
+    Writeln('Imagem posicionada fora da memoria. Abortando!');
     Finish;
   end;
 
   {calculando memoria livre}
-  vFreeMemIni := vCodeEnd + 1;
+  vFreeMemIni := vImgEnd + 1;
 
   { *** calculando posicao do bloco de pilha *** }
-  vStackHigh := (vStackSize = 0);
+  vStackHigh := (vKernelTable.StackSize = 0);
 
   if vStackHigh then
-    vStackSize := vBlockSize;
+    vKernelTable.StackSize := vBlockSize;
 
-  vStackBSize := ((vStackSize - 1) shr vMemAlign) + 1;
+  vStackBSize := ((vKernelTable.StackSize - 1) shr vKernelTable.MemAlign) + 1;
 
   if vDebug then
   begin
@@ -502,7 +577,7 @@ begin
     else
       Writeln(' - Modo Fixo');
 
-    Writeln(' - Tamanho: ', vStackSize, ' bytes [ ', vStackBSize, ' bloco(s) ]');
+    Writeln(' - Tamanho: ', vKernelTable.StackSize, ' bytes [ ', vStackBSize, ' bloco(s) ]');
   end;
 
   if vStackHigh then
@@ -528,8 +603,8 @@ begin
     Finish;
   end;
 
-  vStackStart := ((vStackEnd + 1) shl vMemAlign) - 4;
-  vStackSize := (vStackEnd - vStackIni + 1) shl vMemAlign;
+  vStackStart := ((vStackEnd + 1) shl vKernelTable.MemAlign) - 4;
+  vKernelTable.StackSize := (vStackEnd - vStackIni + 1) shl vKernelTable.MemAlign;
 
   if vDebug then
     Writeln(' - Inicio:  0x', DWordToHex2(vStackStart));
@@ -541,7 +616,7 @@ begin
     vFreeMemIni := vStackEnd + 1;
 
   { *** calculando posicao do bloco de heap *** }
-  vHeapGrow := (vHeapSize = 0);
+  vHeapGrow := (vKernelTable.HeapSize = 0);
 
   if vHeapGrow then
   begin
@@ -550,12 +625,12 @@ begin
     vHeapEnd := vFreeMemEnd;
 
     vHeapBSize := vHeapEnd - vHeapIni + 1;
-    vHeapSize := vHeapBSize shl vMemAlign;
+    vKernelTable.HeapSize := vHeapBSize shl vKernelTable.MemAlign;
   end
   else
   begin
     {heap fixo}
-    vHeapBSize := ((vHeapSize - 1) shr vMemAlign) + 1;
+    vHeapBSize := ((vKernelTable.HeapSize - 1) shr vKernelTable.MemAlign) + 1;
 
     vHeapIni := vFreeMemIni;
     vHeapEnd := vHeapIni + vHeapBSize - 1;
@@ -570,7 +645,7 @@ begin
     else
       Writeln(' - Modo Fixo');
 
-    Writeln(' - Tamanho: ', vHeapSize, ' bytes [ ', vHeapBSize, ' bloco(s) ]');
+    Writeln(' - Tamanho: ', vKernelTable.HeapSize, ' bytes [ ', vHeapBSize, ' bloco(s) ]');
   end;
 
   if (vHeapIni < vFreeMemIni) or (vHeapEnd > vFreeMemEnd) then
@@ -583,8 +658,8 @@ begin
     Finish;
   end;
 
-  vHeapStart := vHeapIni shl vMemAlign;
-  vHeapSize := (vHeapEnd - vHeapIni + 1) shl vMemAlign;
+  vHeapStart := vHeapIni shl vKernelTable.MemAlign;
+  vKernelTable.HeapSize := (vHeapEnd - vHeapIni + 1) shl vKernelTable.MemAlign;
 
   if vDebug then
     Writeln(' - Inicio:  0x', DWordToHex2(vHeapStart));
@@ -594,12 +669,15 @@ begin
 
   { *** memoria livre *** }
   vFreeMemBSize := vFreeMemEnd - vFreeMemIni + 1;
-  vFreeMemSize := (vFreeMemBSize shl vMemAlign) shr 10;
+  vFreeMemSize := (vFreeMemBSize shl vKernelTable.MemAlign);
 
   if (vFreeMemBSize = 0) then
     vFreeMemStart := $FFFFFFFF
   else
-    vFreeMemStart := vFreeMemIni shl vMemAlign;
+    vFreeMemStart := vFreeMemIni shl vKernelTable.MemAlign;
+
+  vFreeHighMemStart := vFreeMemStart;
+  vFreeHighMemSize := vFreeMemSize;
 
   if vDebug then
   begin
@@ -1135,7 +1213,7 @@ end;
 procedure LoadKernel;
 var
   vKernel : File;
-  vMaxAvail : DWord;
+  vKernelSize : DWord;
   vBufferSize : Word;
   vBuffer : Pointer;
   vBufferSeg : TPointerFar16;
@@ -1149,18 +1227,28 @@ begin
   Assign(vKernel, vKernelName);
   Reset(vKernel, 1);
 
+  {pega o tamanho do arquivo}
+  vFileSize := FileSize(vKernel);
+
+  {pega o tamanho final do kernel}
+  vKernelSize := vKernelTable.KernelEnd - vKernelTable.KernelStart;
+
+  {se arquivo for menor copia so o que tem no arquivo}
+  if (vFileSize < vKernelSize) then
+    vKernelSize := vFileSize;
+
   if vDebug then
   begin
     Writeln('Preparando para carregar o kernel...');
-    Writeln('Ponto de entrada: 0x', DWordToHex2(vEntryPoint));
+    Writeln('Inico do kernel: 0x', DWordToHex2(vKernelTable.KernelStart));
     Writeln('Kernel com ', vKernelSize, ' Bytes.');
   end;
 
   {criando buffer}
-  vMaxAvail := MaxAvail;
-
-  if (vMaxAvail > cMaxBuffer) then
-    vBufferSize := cMaxBuffer;
+  if (cMaxBuffer < MaxAvail) then
+    vBufferSize := cMaxBuffer
+  else
+    vBufferSize := MaxAvail;
 
   if (vBufferSize > vKernelSize) then
     vBufferSize := vKernelSize;
@@ -1197,12 +1285,41 @@ begin
   for vPasso := 1 to nPassos do
   begin
     BlockRead(vKernel, vBuffer^, vBufferSize, vLidos);
-    CopyLinear(vBufferLinear, vEntryPoint + ((vPasso - 1) * vBufferSize), vLidos);
+    CopyLinear(vBufferLinear, vKernelTable.KernelStart + ((vPasso - 1) * vBufferSize), vLidos);
   end;
 
   {mostra informacao e fecha o arquivo}
   Writeln(' carregado!');
   Close(vKernel);
+end;
+
+{Configura dados sobre a memoria inferior}
+procedure ConfigLowMem;
+var
+  vTempSeg : TPointerFar16;
+  vLowMemEnd : DWord;
+  vEBDASeg : Word absolute $40:$0E;
+  vEBDAAddr : DWord;
+
+begin
+  vTempSeg.Ofs := 0;
+
+  {pega o endereço de inicio do bootloader (pode ser sobreecrito)}
+  vTempSeg.Seg := CSeg;
+  vFreeLowMemStart := PFar16ToPLinear(vTempSeg);
+
+  {pega o endereco final da memoria inferior}
+  vLowMemEnd := (vLowMemory * 1024) - 1;
+
+  {pega o endereco da EBDA}
+  vTempSeg.Seg := vEBDASeg;
+  vEBDAAddr := PFar16ToPLinear(vTempSeg);
+
+  {verifica se EBDA esta na memoria livre}
+  if (vEBDAAddr > vFreeLowMemStart) and (vEBDAAddr < vLowMemEnd) then
+    vLowMemEnd := vEBDAAddr - 1;
+
+  vFreeLowMemSize := vLowMemEnd - vFreeLowMemStart + 1;
 end;
 
 {Configura a tabela de boot passada ao kernel}
@@ -1224,12 +1341,18 @@ begin
   vBootTable.A20KBC := vA20KBC;
   vBootTable.A20Bios := vA20Bios;
   vBootTable.A20Fast := vA20Fast;
-  vBootTable.CodeIni := vEntryPoint;
-  vBootTable.CodeEnd := vEntryPoint + vKernelSize - 1;
+  vBootTable.ImgIni := vKernelTable.KernelStart;
+  vBootTable.ImgEnd := vKernelTable.KernelEnd - 1;
   vBootTable.StackIni := vStackStart + 3;
-  vBootTable.StackEnd := vStackStart - vStackSize + 4;
+  vBootTable.StackEnd := vStackStart - vKernelTable.StackSize + 4;
   vBootTable.HeapIni := vHeapStart;
-  vBootTable.HeapEnd := vHeapStart + vHeapSize - 1;
+  vBootTable.HeapEnd := vHeapStart + vKernelTable.HeapSize - 1;
+  { adicionados na versao 2 }
+  vBootTable.FreeLowIni := vFreeLowMemStart;
+  vBootTable.FreeLowEnd := vFreeLowMemStart + vFreeLowMemSize  - 1;
+  vBootTable.FreeHighIni := vFreeHighMemStart;
+  vBootTable.FreeHighEnd := vFreeHighMemStart + vFreeHighMemSize - 1;
+  vBootTable.FootSign := cLOSSign;
 end;
 
 {Chama o kernel}
@@ -1249,7 +1372,7 @@ var
 begin
   {prepara parametros para a chamada do kernel}
   vCS := vCodeDesc;
-  vEntry := vEntryPoint;
+  vEntry := vKernelTable.EntryPoint;
 
   vDS := vDataDesc;
   vES := vDataDesc;
@@ -1276,6 +1399,7 @@ begin
   end;
 
   Writeln('Executando kernel em 0x', DWordToHex2(vEntry));
+  WaitKey(cDebugMode <> 0);
 
   {desabilita as interrupcoes para que as IRQs nao causem excecoes}
   DisableInt;
@@ -1298,6 +1422,8 @@ begin
   TestCPU;
   TestMem;
   TestCRT;
+
+  WaitKey(False);
 
   Writeln;
   Writeln('Imagem do kernel: ', vKernelName);
@@ -1334,16 +1460,14 @@ begin
 
   StartUnReal(vDataDesc);
 
-  WaitKey(False);
-
-  {carrega o kernel}
-  Writeln;
-  LoadKernel;
+  {configura dados sobre a memoria inferior}
+  ConfigLowMem;
 
   {configura a tabela de boot}
   ConfigBootTable;
   WaitKey(False);
 
+  {mostra tavela de boot se debug}
   if vDebug then
   begin
     {informacoes sobre a tabela de boot}
@@ -1351,26 +1475,39 @@ begin
     Writeln('Tabela de boot:');
     Writeln;
     Writeln('CPULevel: ', vBootTable.CPULevel);
-    Writeln('LowMemory: ', vBootTable.LowMemory);
-    Writeln('HighMemory: ', vBootTable.HighMemory);
-    Writeln('CRTInfo: 0x', WordToHex(vBootTable.CRTInfo));
-    Writeln('CRTRows: ', vBootTable.CRTRows);
-    Writeln('CRTCols; ', vBootTable.CRTCols);
-    Writeln('CRTPort; 0x', WordToHex(vBootTable.CRTPort));
-    Writeln('CRTSeg: 0x', WordToHex(vBootTable.CRTSeg));
-    Writeln('A20KBC: ', vBootTable.A20KBC);
-    Writeln('A20Bios: ', vBootTable.A20Bios);
-    Writeln('A20Fast: ', vBootTable.A20Fast);
-    Writeln('CodeIni: 0x', DWordToHex2(vBootTable.CodeIni));
-    Writeln('CodeEnd: 0x', DWordToHex2(vBootTable.CodeEnd));
-    Writeln('StackIni: 0x', DWordToHex2(vBootTable.StackIni));
-    Writeln('StackEnd: 0x', DWordToHex2(vBootTable.StackEnd));
-    Writeln('HeapIni: 0x', DWordToHex2(vBootTable.HeapIni));
-    Writeln('HeapEnd: 0x', DWordToHex2(vBootTable.HeapEnd));
+    Writeln('Memory (Low/High): ', vBootTable.LowMemory, '/',
+      vBootTable.HighMemory);
     Writeln;
-    Writeln('Para debug => Ofset do CRTSeg: ', Ofs(vBootTable.CRTSeg) - Ofs(vBootTable));
+    Writeln('CRTInfo:         0x', WordToHex(vBootTable.CRTInfo));
+    Writeln('CRTRows/CRTCols: ', vBootTable.CRTRows, '/', vBootTable.CRTCols);
+    Writeln('CRTPort/CRTSeg:  0x', WordToHex(vBootTable.CRTPort), '/0x',
+      WordToHex(vBootTable.CRTSeg));
+    Writeln;
+    Write('A20 Support: ');
+    if vBootTable.A20Bios then Write(' Bios ');
+    if vBootTable.A20KBC then Write(' KBC8042 ');
+    if vBootTable.A20Fast then Write(' FastGate ');
+    Writeln;
+    Writeln;
+    Writeln('Image (Ini/End): 0x', DWordToHex2(vBootTable.ImgIni), '/0x',
+      DWordToHex2(vBootTable.ImgEnd));
+    Writeln('Stack (Ini/End): 0x', DWordToHex2(vBootTable.StackIni), '/0x',
+      DWordToHex2(vBootTable.StackEnd));
+    Writeln('Heap  (Ini/End): 0x', DWordToHex2(vBootTable.HeapIni), '/0x',
+      DWordToHex2(vBootTable.HeapEnd));
+    Writeln;
+    Writeln('Free Low Memory  (Ini/End): 0x', DWordToHex2(vBootTable.FreeLowIni),
+      '/0x', DWordToHex2(vBootTable.FreeLowEnd));
+    Writeln('Free High Memory (Ini/End): 0x', DWordToHex2(vBootTable.FreeHighIni),
+      '/0x', DWordToHex2(vBootTable.FreeHighEnd));
+    Writeln;
+
     WaitKey(True);
   end;
+
+  {carrega o kernel}
+  Writeln;
+  LoadKernel;
 
   {chama o kernel}
   ExecKernel;

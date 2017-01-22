@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit contem a tabela de boot fornecida pelo bootloader.
   --------------------------------------------------------------------------
-  Versao: 0.1.1
-  Data: 14/06/2013
+  Versao: 0.2
+  Data: 20/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc bootbt.pas
@@ -64,18 +64,25 @@ type
     A20KBC : Boolean;
     A20Bios : Boolean;
     A20Fast : Boolean;
-    CodeIni : DWord;
-    CodeEnd : DWord;
+    ImgIni : DWord;
+    ImgEnd : DWord;
     StackIni : DWord;
     StackEnd : DWord;
     HeapIni : DWord;
     HeapEnd : DWord;
+    {adicionado na versao 2}
+    FreeLowIni : DWord;
+    FreeLowEnd : DWord;
+    FreeHighIni : DWord;
+    FreeHighEnd : DWord;
+    {assinatura de rodape}
+    FootSign : TLOSSign;
   end;
 
 const
   cLOSSign  : TLOSSign  = ('L', 'O', 'S', #0);
   cBTSign   : TBTSign   = ('B', 'B', 'T', #0);
-  cBTVersion = 1 ;
+  cBTVersion = 2 ;
 
 implementation
 

@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos basicos usados por outras diversas Units.
   --------------------------------------------------------------------------
-  Versao: 0.6
-  Data: 07/04/2013
+  Versao: 0.7
+  Data: 20/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc basic.pas
@@ -40,6 +40,9 @@ interface
 
 type
   DWord = LongInt;
+
+  PByteArray = ^TByteArray;
+  TByteArray = array[0..$FFFF-1] of Byte;
 
   TPointerFar16 = packed record
     Ofs : Word;
