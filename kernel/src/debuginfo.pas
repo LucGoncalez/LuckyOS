@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit com procedimentos de Depuracao.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 05/09/2013
+  Versao: 0.2
+  Data: 21/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc debuginfo.pas
@@ -37,6 +37,9 @@
 unit DebugInfo;
 
 interface
+
+uses ErrorsDef;
+
 
 { Registradores
   Geral:    32bits  = eax, ebx, ecx, edx
@@ -53,6 +56,14 @@ interface
 
 
 type
+  PDebugSource = ^TDebugSource;
+  TDebugSource = record
+    UnitID : TUnitID;
+    ProcID : TProcID;
+    FileName : PChar;
+    LineNo : UInt;
+  end;
+
   PDebugBas = ^TDebugBas;
   TDebugBas = record
     EAX, EBX, ECX, EDX : LongWord;
@@ -116,9 +127,14 @@ type
   // Imprime a pilha de chamada
   procedure PrintStackCalls(Frame : Pointer; FrameIni, Count : LongWord; Cols, Rows : Byte);
 
+  // Converte EFlags para String e IOPL
+  function EFlagsToString(EFlags : LongWord; Reserveds : Boolean) : ShortString;
+  function EFlagsToIOPL(EFlags : LongWord) : Byte;
+
   // Obtem diversas informacoes
   function GetDebugInfo : TDebugBas;
   function GetDebugStack(SkipFrames, OffsetESP : LongWord) : TDebugStack;
+
   {$IFDEF KERNEL}
     function GetDebugEx : TDebugEx;
   {$ENDIF}
@@ -127,6 +143,20 @@ type
 implementation
 
 uses SysUtils, ConsoleIO, TTYsDef;
+
+
+const
+  cEFlagsString : array[0..31] of PChar =
+  (
+    {00-07} 'CF', 'R1', 'PF', 'R3', 'AF', 'R5', 'ZF', 'SF',
+    {08-15} 'TF', 'IF', 'DF', 'OF', 'IOPL1', 'IOPL2', 'NT', 'R15',
+    {16-23} 'RF', 'VM', 'AC', 'VIF', 'VIP', 'ID', 'R22', 'R23',
+    {24-31} 'R24', 'R25', 'R26', 'R27', 'R28', 'R29', 'R30', 'R31'
+  );
+
+  cEFlagsReserveds = %11111111110000001000000000101010;
+  cEFlagsIOPL = $3000;
+  cIOPLShift = 12;
 
 
 { Retorna o valor do registrador EAX }
@@ -299,22 +329,22 @@ end;
   (0 - retorna o proprio ponteiro) }
 function GetSFrame(EBP : Pointer; SkipFrames : LongWord) : Pointer;
 var
-  CFrame : ^Pointer;
+  Frame : ^Pointer;
 
 begin
-  CFrame := EBP;
+  Frame := EBP;
 
   while (SkipFrames > 0) do
-    if (CFrame = nil) then
+    if (Frame = nil) then
       // Nao existe Frame anterior
       SkipFrames := 0
     else
     begin
-      CFrame := CFrame^; // Sobe um Frame
+      Frame := Frame^; // Sobe um Frame
       Dec(SkipFrames);
     end;
 
-  GetSFrame := CFrame;
+  GetSFrame := Frame;
 end;
 
 { Retorna o ponteiro de retorno (EIP) do Frame dado }
@@ -474,6 +504,37 @@ begin
 end;
 
 
+function EFlagsToString(EFlags : LongWord; Reserveds : Boolean) : ShortString;
+var
+  I : Byte;
+  vTemp : ShortString;
+
+begin
+  if not Reserveds then
+    EFlags := EFlags and not (cEFlagsReserveds or cEFlagsIOPL);
+
+  vTemp := '';
+
+  for I := 0 to 31 do
+  begin
+    if ((EFlags and $1) = $1) then
+      if (vTemp = '') then
+        vTemp := cEFlagsString[I]
+      else
+        vTemp := cEFlagsString[I] + ' ' + vTemp;
+
+    EFlags := EFlags shr 1;
+  end;
+
+  EFlagsToString := vTemp;
+end;
+
+function EFlagsToIOPL(EFlags : LongWord) : Byte;
+begin
+  EFlagsToIOPL := (EFlags and cEFlagsIOPL) shr cIOPLShift;
+end;
+
+
 { Pega informacoes basicas de depuracao }
 function GetDebugInfo : TDebugBas;
 var
@@ -552,6 +613,7 @@ begin
   GetDebugStack.EBP := GetSFrame(EBPRef, 1);
   GetDebugStack.ESP := EBPRef + OffsetESP;
 end;
+
 
 {$IFDEF KERNEL}
 function GetDebugEx : TDebugEx;
