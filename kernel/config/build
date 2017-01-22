@@ -27,8 +27,8 @@
 #   Arquivo de shell scritp que tem por funcao compilar e criar a imagem do
 # kernel em uma unica operacao.
 # --------------------------------------------------------------------------
-# Versao: 0.4
-# Data: 06/09/2013
+# Versao: 0.5
+# Data: 22/09/2013
 # --------------------------------------------------------------------------
 # Executar: Executado em um terminal
 # > ./build
@@ -39,7 +39,7 @@ finalfiles="*.bin *.map"
 objfiles="*.o *.ppu"
 
 # Lista de arquivos usado pelo ld
-infile1="kernel.o kernellib.o"
+infile1="kernel.o kernellib.o bootbt32.o"
 infile2="system.o sysutils.o"
 infile3="systemcalls.o syscalls.o"
 infile4="stdlib.o stdio.o consoleio.o"
