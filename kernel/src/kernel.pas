@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit principal do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.4
-  Data: 22/09/2013
+  Versao: 0.5
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernel.pas
@@ -49,7 +49,7 @@ uses SysUtils, BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO,
 
 const
   cKernelName = 'LOS-KERNEL';
-  cKernelVersion = '0.5';
+  cKernelVersion = '0.6';
 
   { Enderecos criados pelo linker, usar @ antes dos nomes}
   procedure KernelStart; external name 'kernel_start';

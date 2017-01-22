@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit SysUtils, crosscompiler, que substitui a RTL normal.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 06/09/2013
+  Versao: 0.3
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc sysutils.pas
@@ -180,7 +180,7 @@ begin
   if (vError = 0) then
     StrToInt := vTemp
   else
-    Abort(ERROR_SYSUTILS_INVALID_INTEGER);
+    Abort(ERROR_SYSUTILS_INVALID_INTEGER, '{SysUtils.StrToInt}');
 end;
 
 // Converte string numerica para numero (com default)

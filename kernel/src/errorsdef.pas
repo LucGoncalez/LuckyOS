@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit de definicoes de errors.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 06/09/2013
+  Versao: 0.2
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc errorsdef.pas
@@ -65,9 +65,10 @@ type
     // Erros da biblioteca de terminal
     {11}  ERROR_CTTY_INVALID_CID,
     {12}  ERROR_CTTY_CLOSED_TTY,
-    {13}  ERROR_CTTY_ISNOT_INPUT,
-    {14}  ERROR_CTTY_ISNOT_OUTPUT,
-    {15}  ERROR_CTTY_INVALID_TOKEN
+    {13}  ERROR_CTTY_BROKEN_TTY,
+    {14}  ERROR_CTTY_ISNOT_INPUT,
+    {15}  ERROR_CTTY_ISNOT_OUTPUT,
+    {16}  ERROR_CTTY_INVALID_TOKEN
   );
 
 
@@ -107,9 +108,10 @@ const
     // Erros da biblioteca de terminal
     {11}  'ERROR_CTTY_INVALID_CID',
     {12}  'ERROR_CTTY_CLOSED_TTY',
-    {13}  'ERROR_CTTY_ISNOT_INPUT',
-    {14}  'ERROR_CTTY_ISNOT_OUTPUT',
-    {15}  'ERROR_CTTY_INVALID_TOKEN'
+    {13}  'ERROR_CTTY_BROKEN_TTY',
+    {14}  'ERROR_CTTY_ISNOT_INPUT',
+    {15}  'ERROR_CTTY_ISNOT_OUTPUT',
+    {16}  'ERROR_CTTY_INVALID_TOKEN'
   );
 
 

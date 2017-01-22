@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit interface de chamadas de sistema do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 05/09/2013
+  Versao: 0.2
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc systemcalls.pas
@@ -52,7 +52,7 @@ begin
   case TSysCall(AEAX) of
 
     {0  Sys_Abort = Error : UInt; AbortRec : PAbortRec}
-    Sys_Abort : KernelPanic(TErrorCode(AEBX), PAbortRec(AECX));
+    Sys_Abort : KernelPanic(TErrorCode(AEBX), PChar(AECX), PAbortRec(AEDX));
 
     {1  Sys_Exit = Status : SInt}
 
@@ -69,7 +69,7 @@ begin
     Sys_Write : DirectCall := FileWrite(AEBX, Pointer(AECX), SInt(AEDX));
 
   else
-    KernelPanic(ERROR_SYSCALL_INVALID_CALL, nil);
+    KernelPanic(ERROR_SYSCALL_INVALID_CALL, nil, nil);
   end;
 end;
 

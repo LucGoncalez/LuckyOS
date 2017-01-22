@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit de driver de terminal.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 03/09/2013
+  Versao: 0.2
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc grosstty.pas
@@ -432,7 +432,7 @@ begin
         end;
 
     else
-      Abort(ERROR_TTY_INVALID_TOKEN);
+      Abort(ERROR_TTY_INVALID_TOKEN, '{GrossTTY.ProcessCommand}');
     end;
   end;
 end;
@@ -457,7 +457,7 @@ begin
   end
   }
   else
-    Abort(ERROR_TTY_INVALID_COMMAND);
+    Abort(ERROR_TTY_INVALID_COMMAND, '{GrossTTY.ExecCommand}');
 end;
 
 procedure TTYSendInfo;
