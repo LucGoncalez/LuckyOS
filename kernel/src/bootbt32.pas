@@ -25,14 +25,14 @@
   --------------------------------------------------------------------------
   Esta Unit contem a tabela de boot fornecida pelo bootloader.
 
-    Este arquvivo eh uma variacao do BootBT.pas para ser compilado mais
+    Este arquivo eh uma variacao do BootBT.pas para ser compilado mais
   facilmente pelo FPC sem dependencias vazias.
   --------------------------------------------------------------------------
-  Versao: 0.1.1
-  Data: 14/06/2013
+  Versao: 0.2
+  Data: 22/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
-  > fpc bootbt.pas
+  > fpc bootbt32.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
 ===========================================================================}
@@ -51,6 +51,7 @@ type
   TLOSSign = array[0..3] of char;
   TBTSign = array[0..3] of char;
 
+  PBootTable = ^TBootTable;
   TBootTable = packed record
     {assinatura da tabela}
     LOSSign : TLOSSign;
@@ -68,19 +69,39 @@ type
     A20KBC : Boolean;
     A20Bios : Boolean;
     A20Fast : Boolean;
-    CodeIni : DWord;
-    CodeEnd : DWord;
+    ImgIni : DWord;
+    ImgEnd : DWord;
     StackIni : DWord;
     StackEnd : DWord;
     HeapIni : DWord;
     HeapEnd : DWord;
+    {adicionado na versao 2}
+    FreeLowIni : DWord;
+    FreeLowEnd : DWord;
+    FreeHighIni : DWord;
+    FreeHighEnd : DWord;
+    {assinatura de rodape}
+    FootSign : TLOSSign;
   end;
+
+  function CheckBootTable(TableAddr : Pointer) : Boolean;
+
+
+implementation
 
 const
   cLOSSign  : TLOSSign  = ('L', 'O', 'S', #0);
   cBTSign   : TBTSign   = ('B', 'B', 'T', #0);
-  cBTVersion = 1 ;
+  cBTVersion = 2 ;
 
-implementation
+function CheckBootTable(TableAddr : Pointer) : Boolean;
+begin
+  CheckBootTable :=
+    (PBootTable(TableAddr)^.LOSSign = cLOSSign) and
+    (PBootTable(TableAddr)^.BTSign = cBTSign) and
+    (PBootTable(TableAddr)^.Version = cBTVersion) and
+    (PBootTable(TableAddr)^.FootSign = cLOSSign);
+end;
+
 
 end.
