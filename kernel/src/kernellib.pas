@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit com funcionalidades do Kernel.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 06/09/2013
+  Versao: 0.2
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernellib.pas
@@ -42,7 +42,7 @@ uses SystemDef, ErrorsDef;
 
 
   procedure Shutdown(Mode : TShutDownMode);
-  procedure KernelPanic(Error : TErrorCode; AbortRec : PAbortRec);
+  procedure KernelPanic(Error : TErrorCode; ErrorMsg : PChar; AbortRec : PAbortRec);
 
 
 implementation
@@ -56,7 +56,7 @@ var
 
   procedure ResetCPU; forward;
   procedure HaltCPU; forward;
-  procedure PrintRSoD(Error : TErrorCode; AbortRec : PAbortRec; DebugEx : PDebugEX);  forward;
+  procedure PrintRSoD(Error : TErrorCode; Msg : PChar; AbortRec : PAbortRec; DebugEx : PDebugEX); forward;
 
 
 procedure Shutdown(Mode : TShutDownMode);
@@ -67,7 +67,7 @@ begin
     ResetCPU;
 end;
 
-procedure KernelPanic(Error : TErrorCode; AbortRec : PAbortRec);
+procedure KernelPanic(Error : TErrorCode; ErrorMsg : PChar; AbortRec : PAbortRec);
 var
   vAbortRec : TAbortRec;
   vDebugEx : TDebugEX;
@@ -81,10 +81,10 @@ begin
     begin
       vAbortRec := AbortRec^;
       vDebugEx := GetDebugEx;
-      PrintRSoD(Error, @vAbortRec, @vDebugEx);
+      PrintRSoD(Error, ErrorMsg, @vAbortRec, @vDebugEx);
     end
     else
-      PrintRSoD(Error, nil, nil);
+      PrintRSoD(Error, ErrorMsg, nil, nil);
 
     Shutdown([sdHalt]);
   end;
@@ -124,15 +124,15 @@ asm
 end;
 
 
-procedure PrintRSoD(Error : TErrorCode; AbortRec : PAbortRec; DebugEx : PDebugEX);
+procedure PrintRSoD(Error : TErrorCode; Msg : PChar; AbortRec : PAbortRec; DebugEx : PDebugEX);
 const
   cStackRows = 12;
   cStackCols = 2;
-  cMaxFrames = cStackCols * cStackRows;
 
 var
   vFrameIni, vFrameCount : LongWord;
   vRows, vCols : Word;
+  vMaxFrames : Word;
 
 begin
   CSetBackground(Red);
@@ -140,16 +140,26 @@ begin
   CLineFeed(2);
 
   CWriteln('Kernel Panic!');
+  CWrite('Error: ');
+  CWrite(GetErrorString(Error));
+  CWrite(' (ErrorNo: ');
+  CWrite(Ord(Error));
+  CWriteln(')');
+
+  if Assigned(Msg) then
+  begin
+    vMaxFrames := cStackCols * (cStackRows - 1);
+
+    CWrite('Message: ');
+    CWriteln(Msg);
+  end
+  else
+    vMaxFrames := cStackCols * cStackRows;
+
+  CWriteln;
 
   if Assigned(AbortRec) then
   begin
-    CWrite('Error: ');
-    CWrite(GetErrorString(Error));
-    CWrite(' (ErrorNo: ');
-    CWrite(Ord(Error));
-    CWriteln(')');
-    CWriteln;
-
     CWrite('EAX: ');
     CWrite(IntToHexX(AbortRec^.Basic.EAX, 8));
     CWrite(HT);
@@ -221,10 +231,10 @@ begin
 
     vCols := cStackCols;
 
-    if (AbortRec^.StackLevels < cMaxFrames) then
+    if (AbortRec^.StackLevels < vMaxFrames) then
       vFrameCount := AbortRec^.StackLevels
     else
-      vFrameCount := cMaxFrames;
+      vFrameCount := vMaxFrames;
 
     vRows := ((vFrameCount -1) div cStackCols) + 1;
 
@@ -234,7 +244,7 @@ begin
     PrintStackCalls(AbortRec^.Stack.EBP, vFrameIni, vFrameCount, vCols, vRows);
   end
   else
-    CWriteln('Nenhuma informacao disponivel :(');
+    CWriteln('Nenhuma informacao adicional disponivel :(');
 end;
 
 
