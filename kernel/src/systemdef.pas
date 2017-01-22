@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit de definicoes gerais do Sistema.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 06/09/2013
+  Versao: 0.2
+  Data: 21/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc systemdef.pas
@@ -53,9 +53,10 @@ type
   // Registro usado por SysAbort
   PAbortRec = ^TAbortRec;
   TAbortRec = record
-    StackLevels : LongWord;
+    Source : TDebugSource;
     Basic : TDebugBas;
     Stack : TDebugStack;
+    StackLevels : LongWord;
   end;
 
 
