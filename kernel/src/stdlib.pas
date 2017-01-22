@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit biblioteca padrao.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 06/09/2013
+  Versao: 0.2
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc stdlib.pas
@@ -43,6 +43,7 @@ uses ErrorsDef;
 
   procedure Abort;
   procedure Abort(Error : TErrorCode);
+  procedure Abort(Error : TErrorCode; ErrorMsg : PChar);
 
 
 implementation
@@ -74,7 +75,7 @@ begin
     vAbortInfo.StackLevels := GetSFramesLevels(vAbortInfo.Stack.EBP);
   end;
 
-  SysAbort(TErrorCode(ErrorNo), @vAbortInfo);
+  SysAbort(TErrorCode(ErrorNo), nil, @vAbortInfo);
 end;
 
 procedure Abort(Error : TErrorCode);
@@ -98,7 +99,31 @@ begin
     vAbortInfo.StackLevels := GetSFramesLevels(vAbortInfo.Stack.EBP);
   end;
 
-  SysAbort(TErrorCode(ErrorNo), @vAbortInfo);
+  SysAbort(TErrorCode(ErrorNo), nil, @vAbortInfo);
+end;
+
+procedure Abort(Error : TErrorCode; ErrorMsg : PChar);
+const
+  cSkipFrames = 1; // Pula o Frame da propria Abort
+  cOffsetESP = 8; // TErrorCode = LongWord = 4; Msg = Pointer = 4
+
+begin
+  if not vAborting then
+  begin
+    // Evita que uma segunda chamada sobrescreva a primeira
+    vAborting := True;
+
+    if (Error = ERROR_NONE) then
+      TErrorCode(ErrorNo) := ERROR_UNDEFINED
+    else
+      TErrorCode(ErrorNo) := Error;
+
+    vAbortInfo.Basic := GetDebugInfo;
+    vAbortInfo.Stack := GetDebugStack(cSkipFrames, cOffsetESP);
+    vAbortInfo.StackLevels := GetSFramesLevels(vAbortInfo.Stack.EBP);
+  end;
+
+  SysAbort(TErrorCode(ErrorNo), ErrorMsg, @vAbortInfo);
 end;
 
 
