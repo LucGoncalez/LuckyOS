@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Biblioteca de procedimentos de consoles.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 22/12/2014
+  Versao: 0.3.1
+  Data: 25/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc consoleio.pas
@@ -270,13 +270,13 @@ begin
   vRes := Length(vTemp);
 
   if (FWrite(CID, vTemp[1], vRes) <> vRes) then
-    Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, PI_CRESET,
+    Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, FI_CRESET,
       {$I %FILE%}, {$I %LINE%}, 'Comunicacao com o terminal foi interrompida!');
 
   vRes := FRead(CID, vTemp[1], High(vTemp));
 
   if (vRes < 0) then
-    Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, PI_CRESET,
+    Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, FI_CRESET,
       {$I %FILE%}, {$I %LINE%}, 'Comunicacao com o terminal foi interrompida!');
 
   Byte(vTemp[0]) := vRes;
@@ -1071,7 +1071,7 @@ begin
     InitLib;
 
   if (CID < cFirstTTY) or (CID > cLastTTY) then
-    Abort(ERROR_CTTY_INVALID_CID, UI_CONSOLEIO, PI_ISOPEN,
+    Abort(ERROR_CTTY_INVALID_CID, UI_CONSOLEIO, FI_ISOPEN,
       {$I %FILE%}, {$I %LINE%}, 'O CID fornecido nao eh um terminal valido!');
 
   IsOpen := vTTYArray[CID].Opened;
@@ -1088,7 +1088,7 @@ end;
 procedure CheckOpen(CID : SInt);
 begin
   if not IsOpen(CID) then
-    Abort(ERROR_CTTY_CLOSED_TTY, UI_CONSOLEIO, PI_CHECKOPEN,
+    Abort(ERROR_CTTY_CLOSED_TTY, UI_CONSOLEIO, FI_CHECKOPEN,
       {$I %FILE%}, {$I %LINE%}, 'O CID fornecido nao eh um terminal aberto!');
 end;
 
@@ -1098,7 +1098,7 @@ begin
 
   if (not (ttFile in vTTYArray[CID].TermType)) and
      (not (ttInput in vTTYArray[CID].TermType)) then
-    Abort(ERROR_CTTY_ISNOT_INPUT, UI_CONSOLEIO, PI_CHECKIN,
+    Abort(ERROR_CTTY_ISNOT_INPUT, UI_CONSOLEIO, FI_CHECKIN,
       {$I %FILE%}, {$I %LINE%}, 'O CID fornecido nao eh um terminal entrada!');
 end;
 
@@ -1108,7 +1108,7 @@ begin
 
   if (not (ttFile in vTTYArray[CID].TermType)) and
      (not (ttOutput in vTTYArray[CID].TermType)) then
-    Abort(ERROR_CTTY_ISNOT_OUTPUT, UI_CONSOLEIO, PI_CHECKOUT,
+    Abort(ERROR_CTTY_ISNOT_OUTPUT, UI_CONSOLEIO, FI_CHECKOUT,
       {$I %FILE%}, {$I %LINE%}, 'O CID fornecido nao eh um terminal saida!');
 end;
 
@@ -1137,7 +1137,7 @@ begin
     vRes := FRead(CID, vBuffer0^[1], High(vBuffer0^));
 
     if (vRes < 0) then
-      Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, PI_TTYREAD,
+      Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, FI_TTYREAD,
         {$I %FILE%}, {$I %LINE%}, 'Comunicacao com o terminal foi interrompida!');
 
     Byte(vBuffer0^[0]) := vRes;
@@ -1186,7 +1186,7 @@ begin
   begin
     // Faz o flush
     if (FWrite(CID, vBuffer^[1], vSize) <> vSize) then
-      Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, PI_TTYFLUSH,
+      Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, FI_TTYFLUSH,
         {$I %FILE%}, {$I %LINE%}, 'Comunicacao com o terminal foi interrompida!');
 
     vBuffer^ := '';
@@ -1233,7 +1233,7 @@ begin
   vLen := FRead(CID, vReply[1], High(vReply));
 
   if (vLen < 0) then
-    Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, PI_TTYPROCESSREPLY,
+    Abort(ERROR_CTTY_BROKEN_TTY, UI_CONSOLEIO, FI_TTYPROCESSREPLY,
       {$I %FILE%}, {$I %LINE%}, 'Comunicacao com o terminal foi interrompida!');
 
   Byte(vReply[0]) := vLen;
@@ -1427,7 +1427,7 @@ begin
               end;
           end
           else
-            Abort(ERROR_CTTY_INVALID_TOKEN, UI_CONSOLEIO, PI_PARSEREPLY,
+            Abort(ERROR_CTTY_INVALID_TOKEN, UI_CONSOLEIO, FI_PARSEREPLY,
               {$I %FILE%}, {$I %LINE%}, 'O escape retornado nao eh valido!');
         end;
 
@@ -1467,7 +1467,7 @@ begin
             vTTYInfo^.TermType := vTermType;
           end
           else
-            Abort(ERROR_CTTY_INVALID_TOKEN, UI_CONSOLEIO, PI_PARSEREPLY,
+            Abort(ERROR_CTTY_INVALID_TOKEN, UI_CONSOLEIO, FI_PARSEREPLY,
               {$I %FILE%}, {$I %LINE%}, 'O escape retornado nao eh valido!');
         end;
 
@@ -1484,7 +1484,7 @@ begin
         end;
 
     else
-      Abort(ERROR_CTTY_INVALID_TOKEN, UI_CONSOLEIO, PI_PARSEREPLY,
+      Abort(ERROR_CTTY_INVALID_TOKEN, UI_CONSOLEIO, FI_PARSEREPLY,
         {$I %FILE%}, {$I %LINE%}, 'O escape retornado nao eh valido!');
     end;
 end;
