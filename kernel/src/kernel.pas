@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit principal do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 06/09/2013
+  Versao: 0.4
+  Data: 22/09/2013
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernel.pas
@@ -43,13 +43,20 @@ interface
 
 implementation
 
-uses BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO, SystemDef, TTYsDef;
+uses SysUtils, BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO,
+  SystemDef, TTYsDef;
 
 
 const
   cKernelName = 'LOS-KERNEL';
-  cKernelVersion = '0.4';
+  cKernelVersion = '0.5';
 
+  { Enderecos criados pelo linker, usar @ antes dos nomes}
+  procedure KernelStart; external name 'kernel_start';
+  procedure KernelCode; external name 'kernel_code';
+  procedure KernelData; external name 'kernel_data';
+  procedure KernelBSS; external name 'kernel_bss';
+  procedure KernelEnd; external name 'kernel_end';
 
   { Procedimentos internos (forward) }
   procedure KernelIdle; forward;
@@ -57,11 +64,16 @@ const
 
 procedure KernelInit(BootTable : Pointer); alias : 'kernelinit';
 var
-  vBootTable : ^TBootTable;
+  vBootTable : PBootTable;
 
 begin
-  // Inicializa driver de video/terminal
+  // Testa a tabela de boot
+  if not CheckBootTable(BootTable) then
+    Abort;
+
   vBootTable := BootTable;
+
+  // Inicializa driver de video/terminal
   GrossTTYInit(vBootTable^.CRTPort, vBootTable^.CRTSeg, vBootTable^.CRTRows, vBootTable^.CRTCols, False);
 
   // Abre StdIn : fd = 0
@@ -84,6 +96,168 @@ begin
   CWrite(cKernelVersion);
   CWrite(')');
 
+  CSetNormVideo;
+  CLineFeed(2);
+
+  CSetColor(Yellow);
+  CWriteln('Parametros recebidos do Bootloader:');
+  CSetNormVideo;
+  CWriteln;
+
+  CWrite('CPU:                        ');
+
+  if (vBootTable^.CPULevel >= 3) and (vBootTable^.CPULevel <= 5) then
+    CSetColor(LightGreen)
+  else
+    CSetColor(LightRed);
+
+  case vBootTable^.CPULevel of
+    0 : CWriteln('8086?');
+    1 : CWriteln('80186?');
+    2 : CWriteln('80286?');
+    3 : CWriteln('80386');
+    4 : CWriteln('80486');
+    5 : CWriteln('80586 ou superior');
+  else
+    CWriteln('Nao conhecida!');
+  end;
+
+  CSetNormVideo;
+
+  CWrite('Memoria (Low/High) KB:      ');
+  CSetColor(LightGreen);
+  CWrite(vBootTable^.LowMemory);
+  CSetNormVideo;
+  CWrite('/');
+  CSetColor(LightGreen);
+  CWriteln(vBootTable^.HighMemory);
+
+  CSetNormVideo;
+
+  CWrite('Video (Rows x Cols) :       ');
+  CSetColor(LightGreen);
+  CWrite(vBootTable^.CRTRows);
+  CSetNormVideo;
+  CWrite('x');
+  CSetColor(LightGreen);
+  CWriteln(vBootTable^.CRTCols);
+
+  CSetNormVideo;
+
+  CWrite('A20 suporte:                ');
+
+  if vBootTable^.A20Bios then
+  begin
+    CWrite('[');
+    CSetColor(LightGreen);
+    CWrite('Bios');
+    CSetNormVideo;
+    CWrite('] ');
+  end;
+
+  if vBootTable^.A20KBC then
+  begin
+    CWrite('[');
+    CSetColor(LightGreen);
+    CWrite('KBC8042');
+    CSetNormVideo;
+    CWrite('] ');
+  end;
+
+  if vBootTable^.A20Fast then
+  begin
+    CWrite('[');
+    CSetColor(LightGreen);
+    CWrite('FastGate');
+    CSetNormVideo;
+    CWrite('] ');
+  end;
+
+  CWriteln;
+
+  CWrite('Imagem do kernel (Ini/End):       ');
+  CSetColor(LightGreen);
+  CWrite(IntToHexX(vBootTable^.ImgIni, 8));
+  CSetNormVideo;
+  CWrite('/');
+  CSetColor(LightGreen);
+  CWriteln(IntToHexX(vBootTable^.ImgEnd, 8));
+
+  CSetNormVideo;
+
+  CWrite('Pilha (Ini/End):                  ');
+  CSetColor(LightGreen);
+  CWrite(IntToHexX(vBootTable^.StackIni, 8));
+  CSetNormVideo;
+  CWrite('/');
+  CSetColor(LightGreen);
+  CWriteln(IntToHexX(vBootTable^.StackEnd, 8));
+
+  CSetNormVideo;
+
+  CWrite('Heap (Ini/End):                   ');
+  CSetColor(LightGreen);
+  CWrite(IntToHexX(vBootTable^.HeapIni, 8));
+  CSetNormVideo;
+  CWrite('/');
+  CSetColor(LightGreen);
+  CWriteln(IntToHexX(vBootTable^.HeapEnd, 8));
+
+  CSetNormVideo;
+
+  CWrite('Memoria livre inferior (Ini/End): ');
+  CSetColor(LightGreen);
+  CWrite(IntToHexX(vBootTable^.FreeLowIni, 8));
+  CSetNormVideo;
+  CWrite('/');
+  CSetColor(LightGreen);
+  CWriteln(IntToHexX(vBootTable^.FreeLowEnd, 8));
+
+  CSetNormVideo;
+
+  CWrite('Memoria livre superior (Ini/End): ');
+  CSetColor(LightGreen);
+  CWrite(IntToHexX(vBootTable^.FreeHighIni, 8));
+  CSetNormVideo;
+  CWrite('/');
+  CSetColor(LightGreen);
+  CWriteln(IntToHexX(vBootTable^.FreeHighEnd, 8));
+
+  CSetNormVideo;
+
+  CWriteln;
+  CSetColor(Yellow);
+  CWriteln('Parametros internos do Kernel:');
+  CSetNormVideo;
+  CWriteln;
+
+  CWrite('Kernel_Start: ');
+  CSetColor(LightGreen);
+  CWriteln(@KernelStart);
+  CSetNormVideo;
+
+  CWrite('Kernel_End:   ');
+  CSetColor(LightGreen);
+  CWriteln(@KernelEnd);
+  CSetNormVideo;
+
+  CWriteln;
+
+  CWrite('Kernel_Code:  ');
+  CSetColor(LightGreen);
+  CWriteln(@KernelCode);
+  CSetNormVideo;
+
+  CWrite('Kernel_Data:  ');
+  CSetColor(LightGreen);
+  CWriteln(@KernelData);
+  CSetNormVideo;
+
+  CWrite('Kernel_BSS:   ');
+  CSetColor(LightGreen);
+  CWriteln(@KernelBSS);
+  CSetNormVideo;
+
   KernelIdle;
 end;
 
@@ -96,9 +270,10 @@ var
   vContador : LongWord;
 
 begin
-  CSetNormVideo;
-  CLineFeed(2);
+  CWriteln;
+  CSetColor(LightRed);
   CWriteln('Entrado em IDLE...');
+  CSetNormVideo;
   CWrite('Contador: ');
 
   X := CWhereX;
