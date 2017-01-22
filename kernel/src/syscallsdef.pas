@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit com "a tabela" de chamadas de sistema.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 06/09/2013
+  Versao: 0.2
+  Data: 21/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc syscallsdef.pas
@@ -41,7 +41,7 @@ interface
 type
   TSysCall =
   (
-    {0}   Sys_Abort {Error : UInt; AbortRec : PAbortRec},
+    {0}   Sys_Abort {Error : TErrorCode; ErrorMsg : PChar; AbortRec : PAbortRec},
     {1}   Sys_Exit {Status : SInt},
 
     {2}   Sys_Open {Name : PChar; Mode : TFileMode => SInt} ,
@@ -53,6 +53,7 @@ type
 
 
 implementation
+
 
 { Descricao de chamadas:
 
@@ -67,13 +68,16 @@ implementation
 
 { SysAbort - Finaliza o processo, provocando saida de depuracao;
 
-    Error : UInt => Inteiro sem sinal, indica o codigo de erro referente ao
-                    motivo do abort;
+    Error : TErrorCode => Inteiro sem sinal, indica o codigo de erro referente ao
+                          motivo do abort;
 
-    DebugInfo : PDebugInfo => Ponteiro para TDebugInfo, record com informacoes
-                              precisas de depuracao. Se informado NUL a
-                              depuracao eh feita pelos valores obtidos no final
-                              da chamada;
+    ErrorMsg : PChar => Ponteiro para uma string terminada em zero contendo uma
+                        mensagem de erro opcional;
+
+    AbortRec : PAbortRec => Ponteiro para TAbortRec, record com informacoes
+                            precisas de depuracao. Se informado NUL a
+                            depuracao eh feita pelos valores obtidos no final
+                            da chamada;
 }
 
 { SysExit - Finaliza o processo normalmente;
@@ -86,7 +90,8 @@ implementation
 
     Name : PChar  => Ponteiro para uma string terminada em zero contendo o
                       nome do arquivo;
-    Mode : TFileMode  => Tipo SET  com os modos de abertura;
+
+    Mode : TFileMode  => Tipo SET com os modos de abertura;
 
     Result : SInt => Inteiro com sinal, se zero ou positivo indica o numero
                       do descritor do arquivo, se negativo indica o codigo
