@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit com funcionalidades do Kernel.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 26/07/2014
+  Versao: 0.3
+  Data: 23/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernellib.pas
@@ -40,23 +40,21 @@ interface
 
 uses SystemDef, ErrorsDef;
 
-
   procedure Shutdown(Mode : TShutDownMode);
   procedure KernelPanic(Error : TErrorCode; ErrorMsg : PChar; AbortRec : PAbortRec);
 
 
 implementation
 
-uses SysUtils, ConsoleIO, DebugInfo, TTYsDef;
-
-
-var
-  vInPanic : Boolean = False;
-
+uses SysUtils, TTYsDef, ConsoleIO, DebugInfo;
 
   procedure ResetCPU; forward;
   procedure HaltCPU; forward;
   procedure PrintRSoD(Error : TErrorCode; Msg : PChar; AbortRec : PAbortRec; DebugEx : PDebugEX); forward;
+
+
+var
+  vInPanic : Boolean = False;
 
 
 procedure Shutdown(Mode : TShutDownMode);
@@ -123,18 +121,22 @@ asm
   hlt
 end;
 
-
 procedure PrintRSoD(Error : TErrorCode; Msg : PChar; AbortRec : PAbortRec; DebugEx : PDebugEX);
 const
-  cStackRows = 12;
+  cScreenRows = 25;
+  cDeadRows = 12;
   cStackCols = 2;
+  cSpace = '  ';
 
 var
+  vMaxStackRows, vMaxFrames : Word;
   vFrameIni, vFrameCount : LongWord;
   vRows, vCols : Word;
-  vMaxFrames : Word;
+  vTestI, vTestN : Boolean;
 
 begin
+  vMaxStackRows := cScreenRows - cDeadRows;
+
   CSetBackground(Red);
   CSetColor(White);
   CLineFeed(2);
@@ -142,19 +144,46 @@ begin
   CWriteln('Kernel Panic!');
   CWrite('Error: ');
   CWrite(GetErrorString(Error));
-  CWrite(' (ErrorNo: ');
+  CWrite(' <ErrorNo: ');
   CWrite(Ord(Error));
-  CWriteln(')');
+  CWriteln('>');
+
+  if Assigned(AbortRec) then
+  begin
+    vTestI := (AbortRec^.Source.UnitID <> UI_UNDEFINED) and
+      (AbortRec^.Source.ProcID <> PI_UNDEFINED);
+
+    vTestN := Assigned(AbortRec^.Source.FileName) and (AbortRec^.Source.LineNo <> 0);
+
+    if (vTestI or vTestN) then
+    begin
+      Dec(vMaxStackRows);
+      CWrite('Source: ');
+
+      if vTestI then
+      begin
+        CWrite(GetUnitString(AbortRec^.Source.UnitID));
+        CWrite('.');
+        CWrite(GetProcString(AbortRec^.Source.ProcID));
+      end;
+
+      if vTestN then
+      begin
+        CWrite(' <');
+        CWrite(AbortRec^.Source.FileName);
+        CWrite(':');
+        CWrite(AbortRec^.Source.LineNo);
+        CWriteln('>');
+      end;
+    end;
+  end;
 
   if Assigned(Msg) then
   begin
-    vMaxFrames := cStackCols * (cStackRows - 1);
-
+    Dec(vMaxStackRows);
     CWrite('Message: ');
     CWriteln(Msg);
-  end
-  else
-    vMaxFrames := cStackCols * cStackRows;
+  end;
 
   CWriteln;
 
@@ -162,83 +191,105 @@ begin
   begin
     CWrite('EAX: ');
     CWrite(IntToHexX(AbortRec^.Basic.EAX, 8));
-    CWrite(HT);
+    CWrite(cSpace);
     CWrite('CS: ');
     CWrite(IntToHexX(AbortRec^.Basic.CS, 4));
-    CWrite(HT);
-    CWrite('CR0: ');
-    CWrite(IntToHexX(DebugEx^.CR0, 8));
-    CWrite(HT);
+    CWrite(cSpace);
+    if Assigned(DebugEx) then
+    begin
+      CWrite('CR0: ');
+      CWrite(IntToHexX(DebugEx^.CR0, 8));
+      CWrite(cSpace);
+    end;
     CWrite('EIP: ');
     CWrite(AbortRec^.Stack.EIP);
     CWriteln;
 
     CWrite('EBX: ');
     CWrite(IntToHexX(AbortRec^.Basic.EBX, 8));
-    CWrite(HT);
+    CWrite(cSpace);
     CWrite('DS: ');
     CWrite(IntToHexX(AbortRec^.Basic.DS, 4));
-    CWrite(HT);
-    CWrite('CR2: ');
-    CWrite(IntToHexX(DebugEx^.CR2, 8));
-    CWrite(HT);
+    CWrite(cSpace);
+    if Assigned(DebugEx) then
+    begin
+      CWrite('CR2: ');
+      CWrite(IntToHexX(DebugEx^.CR2, 8));
+      CWrite(cSpace);
+    end;
     CWrite('EBP: ');
     CWrite(AbortRec^.Stack.EBP);
     CWriteln;
 
     CWrite('ECX: ');
     CWrite(IntToHexX(AbortRec^.Basic.ECX, 8));
-    CWrite(HT);
+    CWrite(cSpace);
     CWrite('ES: ');
     CWrite(IntToHexX(AbortRec^.Basic.ES, 4));
-    CWrite(HT);
-    CWrite('CR3: ');
-    CWrite(IntToHexX(DebugEx^.CR3, 8));
-    CWrite(HT);
+    CWrite(cSpace);
+    if Assigned(DebugEx) then
+    begin
+      CWrite('CR3: ');
+      CWrite(IntToHexX(DebugEx^.CR3, 8));
+      CWrite(cSpace);
+    end;
     CWrite('ESP: ');
     CWrite(AbortRec^.Stack.ESP);
     CWriteln;
 
     CWrite('EDX: ');
     CWrite(IntToHexX(AbortRec^.Basic.EDX, 8));
-    CWrite(HT);
+    CWrite(cSpace);
     CWrite('FS: ');
     CWrite(IntToHexX(AbortRec^.Basic.FS, 4));
-    CWrite(HT);
-    CWrite('CR4: ');
-    CWrite(IntToHexX(DebugEx^.CR4, 8));
+    CWrite(cSpace);
+    if Assigned(DebugEx) then
+    begin
+      CWrite('CR4: ');
+      CWrite(IntToHexX(DebugEx^.CR4, 8));
+      CWrite(cSpace);
+    end;
+    CWrite('Stack Frames: ');
+    CWrite(AbortRec^.StackLevels);
     CWriteln;
 
     CWrite('ESI: ');
     CWrite(IntToHexX(AbortRec^.Basic.ESI, 8));
-    CWrite(HT);
+    CWrite(cSpace);
     CWrite('GS: ');
     CWrite(IntToHexX(AbortRec^.Basic.GS, 4));
-    CWrite(HT);
+    CWrite(cSpace);
     CWrite('EFLAGS: ');
     CWrite(IntToHexX(AbortRec^.Basic.EFLAGS, 8));
+    CWrite(cSpace);
+    CWrite('(IOPL: ');
+    CWrite(EFlagsToIOPL(AbortRec^.Basic.EFLAGS));
+    CWrite(')');
     CWriteln;
 
     CWrite('EDI: ');
     CWrite(IntToHexX(AbortRec^.Basic.EDI, 8));
-    CWrite(HT);
+    CWrite(cSpace);
     CWrite('SS: ');
     CWrite(IntToHexX(AbortRec^.Basic.SS, 4));
-    CWrite(HT);
-    CWrite('Stack Frames Levels: ');
-    CWriteln(AbortRec^.StackLevels);
-    CWriteln;
+    CWrite(cSpace);
+    CWrite('{');
+    CWrite(EFlagsToString(AbortRec^.Basic.EFLAGS, False));
+    CWrite('}');
 
-    vCols := cStackCols;
+    CLineFeed(2);
+
+    vMaxFrames := cStackCols * vMaxStackRows;
 
     if (AbortRec^.StackLevels < vMaxFrames) then
       vFrameCount := AbortRec^.StackLevels
     else
       vFrameCount := vMaxFrames;
 
-    vRows := ((vFrameCount -1) div cStackCols) + 1;
-
     vFrameIni := AbortRec^.StackLevels - vFrameCount;
+
+    vCols := cStackCols;
+    vRows := ((vFrameCount -1) div cStackCols) + 1;
 
     CWriteln('Stack Calls:');
     PrintStackCalls(AbortRec^.Stack.EBP, vFrameIni, vFrameCount, vCols, vRows);
