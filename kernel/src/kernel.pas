@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit principal do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.5
-  Data: 26/07/2014
+  Versao: 0.6.1
+  Data: 23/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernel.pas
@@ -50,6 +50,10 @@ uses SysUtils, BootBT32, GrossTTY, StdLib, StdIO, ConsoleIO,
 const
   cKernelName = 'LOS-KERNEL';
   cKernelVersion = '0.6';
+  cKernelDate = {$I %DATE%};
+  cKernelTime = {$I %TIME%};
+  cFPCVersion = {$I %FPCVERSION%};
+  cTargetCPU = {$I %FPCTARGETCPU%};
 
   { Enderecos criados pelo linker, usar @ antes dos nomes}
   procedure KernelStart; external name 'kernel_start';
@@ -92,9 +96,8 @@ begin
   CSetBackground(Green);
   CClrLine;
 
-  CWrite('Kernel UP: ' + cKernelName + '(v');
-  CWrite(cKernelVersion);
-  CWrite(')');
+  CWrite('Kernel UP: ' + cKernelName + '.' + cTargetCPU + '(v' + cKernelVersion + ')');
+  CWrite(' [Build: ' + cKernelDate + '-' + cKernelTime + ' FPC:' + cFPCVersion + ']');
 
   CSetNormVideo;
   CLineFeed(2);
@@ -102,7 +105,6 @@ begin
   CSetColor(Yellow);
   CWriteln('Parametros recebidos do Bootloader:');
   CSetNormVideo;
-  CWriteln;
 
   CWrite('CPU:                        ');
 
@@ -174,6 +176,7 @@ begin
   end;
 
   CWriteln;
+  CWriteln;
 
   CWrite('Imagem do kernel (Ini/End):       ');
   CSetColor(LightGreen);
@@ -204,6 +207,7 @@ begin
   CWriteln(IntToHexX(vBootTable^.HeapEnd, 8));
 
   CSetNormVideo;
+  CWriteln;
 
   CWrite('Memoria livre inferior (Ini/End): ');
   CSetColor(LightGreen);
@@ -229,7 +233,6 @@ begin
   CSetColor(Yellow);
   CWriteln('Parametros internos do Kernel:');
   CSetNormVideo;
-  CWriteln;
 
   CWrite('Kernel_Start: ');
   CSetColor(LightGreen);
