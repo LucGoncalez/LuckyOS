@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Biblioteca de procedimentos de consoles.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 02/09/2013
+  Versao: 0.2
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc consoleio.pas
@@ -270,12 +270,12 @@ begin
   vRes := Length(vTemp);
 
   if (FWrite(CID, vTemp[1], vRes) <> vRes) then
-    Abort;
+    Abort(ERROR_CTTY_BROKEN_TTY, '{ConsoleIO.CReset[1]}');
 
   vRes := FRead(CID, vTemp[1], High(vTemp));
 
   if (vRes < 0) then
-    Abort;
+    Abort(ERROR_CTTY_BROKEN_TTY, '{ConsoleIO.CReset[2]}');
 
   Byte(vTemp[0]) := vRes;
 
@@ -1069,7 +1069,7 @@ begin
     InitLib;
 
   if (CID < cFirstTTY) or (CID > cLastTTY) then
-    Abort(ERROR_CTTY_INVALID_CID);
+    Abort(ERROR_CTTY_INVALID_CID, '{ConsoleIO.IsOpen}');
 
   IsOpen := vTTYArray[CID].Opened;
 end;
@@ -1085,7 +1085,7 @@ end;
 procedure CheckOpen(CID : SInt);
 begin
   if not IsOpen(CID) then
-    Abort(ERROR_CTTY_CLOSED_TTY);
+    Abort(ERROR_CTTY_CLOSED_TTY, '{ConsoleIO.CheckOpen}');
 end;
 
 procedure CheckIn(CID : SInt);
@@ -1094,7 +1094,7 @@ begin
 
   if (not (ttFile in vTTYArray[CID].TermType)) and
      (not (ttInput in vTTYArray[CID].TermType)) then
-    Abort(ERROR_CTTY_ISNOT_INPUT);
+    Abort(ERROR_CTTY_ISNOT_INPUT, '{ConsoleIO.CheckIn}');
 end;
 
 procedure CheckOut(CID : SInt);
@@ -1103,7 +1103,7 @@ begin
 
   if (not (ttFile in vTTYArray[CID].TermType)) and
      (not (ttOutput in vTTYArray[CID].TermType)) then
-    Abort(ERROR_CTTY_ISNOT_OUTPUT);
+    Abort(ERROR_CTTY_ISNOT_OUTPUT, '{ConsoleIO.CheckOut}');
 end;
 
 
@@ -1131,7 +1131,7 @@ begin
     vRes := FRead(CID, vBuffer0^[1], High(vBuffer0^));
 
     if (vRes < 0) then
-      Abort;
+      Abort(ERROR_CTTY_BROKEN_TTY, '{ConsoleIO.TTYRead}');
 
     Byte(vBuffer0^[0]) := vRes;
   end;
@@ -1179,7 +1179,7 @@ begin
   begin
     // Faz o flush
     if (FWrite(CID, vBuffer^[1], vSize) <> vSize) then
-      Abort;
+      Abort(ERROR_CTTY_BROKEN_TTY, '{ConsoleIO.TTYFlush}');
 
     vBuffer^ := '';
   end;
@@ -1225,7 +1225,7 @@ begin
   vLen := FRead(CID, vReply[1], High(vReply));
 
   if (vLen < 0) then
-    Abort;
+    Abort(ERROR_CTTY_BROKEN_TTY, '{ConsoleIO.TTYProcessReply}');
 
   Byte(vReply[0]) := vLen;
 
@@ -1418,7 +1418,7 @@ begin
               end;
           end
           else
-            Abort(ERROR_CTTY_INVALID_TOKEN);
+            Abort(ERROR_CTTY_INVALID_TOKEN, '{ConsoleIO.TTYParseReply[1]}');
         end;
 
       'R' :
@@ -1457,7 +1457,7 @@ begin
             vTTYInfo^.TermType := vTermType;
           end
           else
-            Abort(ERROR_CTTY_INVALID_TOKEN);
+            Abort(ERROR_CTTY_INVALID_TOKEN, '{ConsoleIO.TTYParseReply[2]}');
         end;
 
       'X' :
@@ -1473,7 +1473,7 @@ begin
         end;
 
     else
-      Abort(ERROR_CTTY_INVALID_TOKEN);
+      Abort(ERROR_CTTY_INVALID_TOKEN, '{ConsoleIO.TTYParseReply[3]}');
     end;
 end;
 
