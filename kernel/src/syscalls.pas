@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit biblioteca de chamadas de sistema.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 05/09/2013
+  Versao: 0.2
+  Data: 26/07/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc syscalls.pas
@@ -41,7 +41,7 @@ interface
 uses SystemDef, ErrorsDef;
 
 
-  procedure SysAbort(Error : TErrorCode; AbortRec : PAbortRec);
+  procedure SysAbort(Error : TErrorCode; ErrorMsg : PChar; AbortRec : PAbortRec);
   procedure SysExit(Status : SInt);
 
   function  SysOpen(Name : PChar; Mode : TFileMode) : SInt;
@@ -65,9 +65,9 @@ function DoCall(CallNo : TSysCall; Param1, Param2 : UInt) : SInt; forward;
 function DoCall(CallNo : TSysCall; Param1, Param2, Param3 : UInt) : SInt; forward;
 
 
-procedure SysAbort(Error : TErrorCode; AbortRec : PAbortRec);
+procedure SysAbort(Error : TErrorCode; ErrorMsg : PChar; AbortRec : PAbortRec);
 begin
-  DoCall(Sys_Abort, UInt(Error), UInt(AbortRec));
+  DoCall(Sys_Abort, UInt(Error), UInt(ErrorMsg), UInt(AbortRec));
 end;
 
 procedure SysExit(Status : SInt);
