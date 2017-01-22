@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit de definicoes de errors.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 26/07/2014
+  Versao: 0.3
+  Data: 23/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc errorsdef.pas
@@ -68,11 +68,42 @@ type
     {13}  ERROR_CTTY_BROKEN_TTY,
     {14}  ERROR_CTTY_ISNOT_INPUT,
     {15}  ERROR_CTTY_ISNOT_OUTPUT,
-    {16}  ERROR_CTTY_INVALID_TOKEN
+    {16}  ERROR_CTTY_INVALID_TOKEN,
+
+    {x}   ERROR_TEST
+  );
+
+  TUnitID =
+  (
+    UI_UNDEFINED,
+    UI_SYSUTILS,
+    UI_KERNEL,
+    UI_GROSSTTY,
+    UI_CONSOLEIO
+  );
+
+  TProcID =
+  (
+    PI_UNDEFINED,
+    PI_STRTOINT,
+    PI_PROCESSCOMMAND,
+    PI_EXECCOMMAND,
+    PI_CRESET,
+    PI_ISOPEN,
+    PI_CHECKOPEN,
+    PI_CHECKIN,
+    PI_CHECKOUT,
+    PI_TTYREAD,
+    PI_TTYFLUSH,
+    PI_TTYPROCESSREPLY,
+    PI_PARSEREPLY,
+    PI_KERNELINIT
   );
 
 
   function GetErrorString(ErrorNo : TErrorCode) : ShortString;
+  function GetUnitString(UnitID : TUnitID) : ShortString;
+  function GetProcString(ProcID : TProcID) : ShortString;
 
 
 var
@@ -80,6 +111,7 @@ var
 
 
 implementation
+
 
 const
   cErrorStrings : array[TErrorCode] of PChar =
@@ -111,13 +143,52 @@ const
     {13}  'ERROR_CTTY_BROKEN_TTY',
     {14}  'ERROR_CTTY_ISNOT_INPUT',
     {15}  'ERROR_CTTY_ISNOT_OUTPUT',
-    {16}  'ERROR_CTTY_INVALID_TOKEN'
+    {16}  'ERROR_CTTY_INVALID_TOKEN',
+
+    {x}   'Gatilho para teste (ERROR_TEST)'
+  );
+
+  cUnitString : array[TUnitID] of PChar =
+  (
+    'UNDEFINED',
+    'SysUtils',
+    'Kernel',
+    'GrossTTY',
+    'ConsoleIO'
+  );
+
+  cProcString : array[TProcID] of PChar =
+  (
+    'UNDEFINED',
+    'StrToInt',
+    'ProcessCommand',
+    'ExecCommand',
+    'CReset',
+    'IsOpen',
+    'CheckOpen',
+    'CheckIn',
+    'CheckOut',
+    'TTYRead',
+    'TTYFlush',
+    'TTYProcessReply',
+    'TTYParseReply',
+    'KernelInit'
   );
 
 
 function GetErrorString(ErrorNo : TErrorCode) : ShortString;
 begin
   GetErrorString := cErrorStrings[ErrorNo];
+end;
+
+function GetUnitString(UnitID : TUnitID) : ShortString;
+begin
+  GetUnitString := cUnitString[UnitID];
+end;
+
+function GetProcString(ProcID : TProcID) : ShortString;
+begin
+  GetProcString := cProcString[ProcID];
 end;
 
 
