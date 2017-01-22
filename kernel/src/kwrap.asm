@@ -26,8 +26,8 @@
 ;   Arquivo escrito em Assembly que "envolve" o código escrito em linguagem
 ; de alto nivel, ele server para fazer a inicializacao inicial do kernel.
 ; --------------------------------------------------------------------------
-; Versao: 0.1
-; Data: 29/04/2013
+; Versao: 0.2
+; Data: 22/09/2013
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f elf32 kwrap.asm
@@ -37,36 +37,58 @@
 ;===========================================================================
 
 ; configuracao do kernel
-  CPUMin      EQU 3           ; 80386
+  CPUModel    EQU 3           ; 80_3_86
+  CPUMode     EQU 2           ; {0-real, 1-pm.segmentado, 2-pm.flat, 3-pm-paginado}
   MemAlign    EQU 12          ; 2^12 = 4K
-  EntryPoint  EQU 0x00100000  ; 1M
   StackSize   EQU 0x00000000  ; Extensivel
   HeapSize    EQU 0x00000000  ; Extensivel
 
 GLOBAL start
+
+; informacoes da imagem em memoria
+EXTERN kernel_start, kernel_end
+EXTERN kernel_code, kernel_data, kernel_bss
+
+; rotina principal do kernel
 EXTERN kernelinit
+
 
 SECTION .text
 
 [BITS 32]
 
-start:
-  jmp near kstart
-
-  ; *** Tabela de dados do kernel usada no boot
   ; IMPORTANTE: nao altere, use as constantes de cofiguracao acima
-  KT:       ; kernel table
-  .LOS_Sign   DB  'LOS', 0    ; 4 B
-  .KT_Sign    DB  'BKT', 0    ; 4 B
-  .Version    DB  1           ; 1 B
-  .CPUMin     DB  CPUMin      ; 1 B
-  .MemAlign   DB  MemAlign    ; 1 B
-  .EntryPoint DD  EntryPoint  ; 4 B
-  .StackSize  DD  StackSize   ; 4 B
-  .HeapSize   DD  HeapSize    ; 4 B
-  ; total 23 bytes
-  ; *** Tabela de dados do kernel usada no boot
+  ; Implementacao de cabecalho de arquivos do sistema
+  LOSHeader:    ; Tabela de cabecalho PADRAO LOS...
+  .Begin:
+  ; Cabecalho padrao
+  .LOSSign      DB  'LOS', 0      ; Assinatura padrao
+  .HeaderSize   DW  .End - .Begin ; Automatiza o tamanho do cabecalho (max 64K)
+  ; Cabecalho arquivo (Todo LOSHeader tem)
+  .FileType     DB  'KRNLIMG', 0  ; Tipo do arquivo
+  .TypeVersion  DW  1, 0          ; Versao (do cabecalho) maior/menor
+  ; Metadados - arquitetura (Define alguns campos)
+  .ArchBase     DB  0             ; x86 (vai que rola um ARM)
+  .ArchBits     DB  32            ; influi no tamanho de campos abaixo *
+  ; Metadados - requisitos
+  .CPUModel     DB  CPUModel      ; Informa o modelo da CPUMin x86
+  .CPUMode      DB  CPUMode       ; Informa o modo de operacao x86
+  .MemAlign     DB  MemAlign      ; Bits 2^X
+  .StackSize    DD  StackSize     ; * Em bytes
+  .HeapSize     DD  HeapSize      ; * Em bytes
+  ; Metadados - imagem
+  .KernelStart  DD  kernel_start  ; * Endereco de inicio da imagem em memoria
+  .KernelEnd    DD  kernel_end    ; * Endereco de termino da imagem em memoria
+  .EntryPoint   DD  start         ; * Endereco do procedimento principal
+  ; Metadados - segmentos
+  .Code         DD  kernel_code   ; * Inicio do segmento de codigo
+  .Data         DD  kernel_data   ; * Inicio do segmento de dados
+  .BSS          DD  kernel_bss    ; * Inicio do segmento BSS
+  ; Assinatura de conferencia
+  .FootSign     DB  'LOS', 0      ; Assinatura padrao
+  .End:         ; Termina o cabecalho
 
-kstart:
+
+start:
   push eax
   call kernelinit
