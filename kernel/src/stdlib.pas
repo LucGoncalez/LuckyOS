@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit biblioteca padrao.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 22/12/2014
+  Versao: 0.3.1
+  Data: 25/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc stdlib.pas
@@ -44,7 +44,7 @@ uses ErrorsDef;
   procedure Abort(Error : TErrorCode);
   procedure Abort(Error : TErrorCode; ErrorMsg : PChar);
   procedure Abort(Error : TErrorCode; FileName, LineNo, ErrorMsg : PChar);
-  procedure Abort(Error : TErrorCode; UnitID : TUnitID; ProcID : TProcID; FileName, LineNo, ErrorMsg : PChar);
+  procedure Abort(Error : TErrorCode; UnitID : TUnitID; FuncID : TFuncID; FileName, LineNo, ErrorMsg : PChar);
 
 
 implementation
@@ -72,7 +72,7 @@ begin
       TErrorCode(ErrorNo) := ERROR_UNDEFINED;
 
     vAbortInfo.Source.UnitID := UI_UNDEFINED;
-    vAbortInfo.Source.ProcID := PI_UNDEFINED;
+    vAbortInfo.Source.FuncID := FI_UNDEFINED;
 
     vAbortInfo.Source.FileName := nil;
     vAbortInfo.Source.LineNo := 0;
@@ -104,7 +104,7 @@ begin
       TErrorCode(ErrorNo) := Error;
 
     vAbortInfo.Source.UnitID := UI_UNDEFINED;
-    vAbortInfo.Source.ProcID := PI_UNDEFINED;
+    vAbortInfo.Source.FuncID := FI_UNDEFINED;
 
     vAbortInfo.Source.FileName := nil;
     vAbortInfo.Source.LineNo := 0;
@@ -137,7 +137,7 @@ begin
       TErrorCode(ErrorNo) := Error;
 
     vAbortInfo.Source.UnitID := UI_UNDEFINED;
-    vAbortInfo.Source.ProcID := PI_UNDEFINED;
+    vAbortInfo.Source.FuncID := FI_UNDEFINED;
 
     vAbortInfo.Source.FileName := nil;
     vAbortInfo.Source.LineNo := 0;
@@ -172,7 +172,7 @@ begin
       TErrorCode(ErrorNo) := Error;
 
     vAbortInfo.Source.UnitID := UI_UNDEFINED;
-    vAbortInfo.Source.ProcID := PI_UNDEFINED;
+    vAbortInfo.Source.FuncID := FI_UNDEFINED;
 
     vAbortInfo.Source.FileName := FileName;
     vAbortInfo.Source.LineNo := StrToIntDef(LineNo, 0);
@@ -185,13 +185,13 @@ begin
   SysAbort(TErrorCode(ErrorNo), ErrorMsg, @vAbortInfo);
 end;
 
-procedure Abort(Error : TErrorCode; UnitID : TUnitID; ProcID : TProcID; FileName, LineNo, ErrorMsg : PChar);
+procedure Abort(Error : TErrorCode; UnitID : TUnitID; FuncID : TFuncID; FileName, LineNo, ErrorMsg : PChar);
 const
   cSkipFrames = 1; // Pula o Frame da propria Abort
   cOffsetESP = 24;
   // TErrorCode = LongWord = 4
   // TUnitID    = LongWord = 4
-  // TProcID    = LongWord = 4
+  // TFuncID    = LongWord = 4
   // Filename   = PChar    = 4
   // LineNo     = PChar    = 4
   // ErrorMsg   = PChar    = 4
@@ -209,7 +209,7 @@ begin
       TErrorCode(ErrorNo) := Error;
 
     vAbortInfo.Source.UnitID := UnitID;
-    vAbortInfo.Source.ProcID := ProcID;
+    vAbortInfo.Source.FuncID := FuncID;
 
     vAbortInfo.Source.FileName := FileName;
     vAbortInfo.Source.LineNo := StrToIntDef(LineNo, 0);
