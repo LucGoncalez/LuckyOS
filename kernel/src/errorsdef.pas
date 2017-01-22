@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit de definicoes de errors.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 23/12/2014
+  Versao: 0.3.1
+  Data: 25/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc errorsdef.pas
@@ -82,28 +82,28 @@ type
     UI_CONSOLEIO
   );
 
-  TProcID =
+  TFuncID =
   (
-    PI_UNDEFINED,
-    PI_STRTOINT,
-    PI_PROCESSCOMMAND,
-    PI_EXECCOMMAND,
-    PI_CRESET,
-    PI_ISOPEN,
-    PI_CHECKOPEN,
-    PI_CHECKIN,
-    PI_CHECKOUT,
-    PI_TTYREAD,
-    PI_TTYFLUSH,
-    PI_TTYPROCESSREPLY,
-    PI_PARSEREPLY,
-    PI_KERNELINIT
+    FI_UNDEFINED,
+    FI_STRTOINT,
+    FI_PROCESSCOMMAND,
+    FI_EXECCOMMAND,
+    FI_CRESET,
+    FI_ISOPEN,
+    FI_CHECKOPEN,
+    FI_CHECKIN,
+    FI_CHECKOUT,
+    FI_TTYREAD,
+    FI_TTYFLUSH,
+    FI_TTYPROCESSREPLY,
+    FI_PARSEREPLY,
+    FI_KERNELINIT
   );
 
 
   function GetErrorString(ErrorNo : TErrorCode) : ShortString;
   function GetUnitString(UnitID : TUnitID) : ShortString;
-  function GetProcString(ProcID : TProcID) : ShortString;
+  function GetFuncString(FuncID : TFuncID) : ShortString;
 
 
 var
@@ -157,7 +157,7 @@ const
     'ConsoleIO'
   );
 
-  cProcString : array[TProcID] of PChar =
+  cFuncString : array[TFuncID] of PChar =
   (
     'UNDEFINED',
     'StrToInt',
@@ -186,9 +186,9 @@ begin
   GetUnitString := cUnitString[UnitID];
 end;
 
-function GetProcString(ProcID : TProcID) : ShortString;
+function GetFuncString(FuncID : TFuncID) : ShortString;
 begin
-  GetProcString := cProcString[ProcID];
+  GetFuncString := cFuncString[FuncID];
 end;
 
 
