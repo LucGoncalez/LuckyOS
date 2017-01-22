@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit biblioteca padrao.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 26/07/2014
+  Versao: 0.3
+  Data: 22/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc stdlib.pas
@@ -40,15 +40,16 @@ interface
 
 uses ErrorsDef;
 
-
   procedure Abort;
   procedure Abort(Error : TErrorCode);
   procedure Abort(Error : TErrorCode; ErrorMsg : PChar);
+  procedure Abort(Error : TErrorCode; FileName, LineNo, ErrorMsg : PChar);
+  procedure Abort(Error : TErrorCode; UnitID : TUnitID; ProcID : TProcID; FileName, LineNo, ErrorMsg : PChar);
 
 
 implementation
 
-uses SystemDef, SysCalls, DebugInfo;
+uses SysUtils, SystemDef, SysCalls, DebugInfo;
 
 
 var
@@ -70,6 +71,12 @@ begin
     if (TErrorCode(ErrorNo) = ERROR_NONE) then
       TErrorCode(ErrorNo) := ERROR_UNDEFINED;
 
+    vAbortInfo.Source.UnitID := UI_UNDEFINED;
+    vAbortInfo.Source.ProcID := PI_UNDEFINED;
+
+    vAbortInfo.Source.FileName := nil;
+    vAbortInfo.Source.LineNo := 0;
+
     vAbortInfo.Basic := GetDebugInfo;
     vAbortInfo.Stack := GetDebugStack(cSkipFrames, cOffsetESP);
     vAbortInfo.StackLevels := GetSFramesLevels(vAbortInfo.Stack.EBP);
@@ -81,7 +88,9 @@ end;
 procedure Abort(Error : TErrorCode);
 const
   cSkipFrames = 1; // Pula o Frame da propria Abort
-  cOffsetESP = 4; // TErrorCode = LongWord = 4
+  cOffsetESP = 4;
+  // TErrorCode = LongWord = 4
+  // Total                 = 4
 
 begin
   if not vAborting then
@@ -93,6 +102,12 @@ begin
       TErrorCode(ErrorNo) := ERROR_UNDEFINED
     else
       TErrorCode(ErrorNo) := Error;
+
+    vAbortInfo.Source.UnitID := UI_UNDEFINED;
+    vAbortInfo.Source.ProcID := PI_UNDEFINED;
+
+    vAbortInfo.Source.FileName := nil;
+    vAbortInfo.Source.LineNo := 0;
 
     vAbortInfo.Basic := GetDebugInfo;
     vAbortInfo.Stack := GetDebugStack(cSkipFrames, cOffsetESP);
@@ -105,7 +120,10 @@ end;
 procedure Abort(Error : TErrorCode; ErrorMsg : PChar);
 const
   cSkipFrames = 1; // Pula o Frame da propria Abort
-  cOffsetESP = 8; // TErrorCode = LongWord = 4; Msg = Pointer = 4
+  cOffsetESP = 8;
+  // TErrorCode = LongWord = 4
+  // ErrorMsg   = PChar    = 4
+  // Total                 = 8
 
 begin
   if not vAborting then
@@ -117,6 +135,84 @@ begin
       TErrorCode(ErrorNo) := ERROR_UNDEFINED
     else
       TErrorCode(ErrorNo) := Error;
+
+    vAbortInfo.Source.UnitID := UI_UNDEFINED;
+    vAbortInfo.Source.ProcID := PI_UNDEFINED;
+
+    vAbortInfo.Source.FileName := nil;
+    vAbortInfo.Source.LineNo := 0;
+
+    vAbortInfo.Basic := GetDebugInfo;
+    vAbortInfo.Stack := GetDebugStack(cSkipFrames, cOffsetESP);
+    vAbortInfo.StackLevels := GetSFramesLevels(vAbortInfo.Stack.EBP);
+  end;
+
+  SysAbort(TErrorCode(ErrorNo), ErrorMsg, @vAbortInfo);
+end;
+
+procedure Abort(Error : TErrorCode; FileName, LineNo, ErrorMsg : PChar);
+const
+  cSkipFrames = 1; // Pula o Frame da propria Abort
+  cOffsetESP = 16;
+  // TErrorCode = LongWord = 4
+  // Filename   = PChar    = 4
+  // LineNo     = PChar    = 4
+  // ErrorMsg   = PChar    = 4
+  // Total                 = 16
+
+begin
+  if not vAborting then
+  begin
+    // Evita que uma segunda chamada sobrescreva a primeira
+    vAborting := True;
+
+    if (Error = ERROR_NONE) then
+      TErrorCode(ErrorNo) := ERROR_UNDEFINED
+    else
+      TErrorCode(ErrorNo) := Error;
+
+    vAbortInfo.Source.UnitID := UI_UNDEFINED;
+    vAbortInfo.Source.ProcID := PI_UNDEFINED;
+
+    vAbortInfo.Source.FileName := FileName;
+    vAbortInfo.Source.LineNo := StrToIntDef(LineNo, 0);
+
+    vAbortInfo.Basic := GetDebugInfo;
+    vAbortInfo.Stack := GetDebugStack(cSkipFrames, cOffsetESP);
+    vAbortInfo.StackLevels := GetSFramesLevels(vAbortInfo.Stack.EBP);
+  end;
+
+  SysAbort(TErrorCode(ErrorNo), ErrorMsg, @vAbortInfo);
+end;
+
+procedure Abort(Error : TErrorCode; UnitID : TUnitID; ProcID : TProcID; FileName, LineNo, ErrorMsg : PChar);
+const
+  cSkipFrames = 1; // Pula o Frame da propria Abort
+  cOffsetESP = 24;
+  // TErrorCode = LongWord = 4
+  // TUnitID    = LongWord = 4
+  // TProcID    = LongWord = 4
+  // Filename   = PChar    = 4
+  // LineNo     = PChar    = 4
+  // ErrorMsg   = PChar    = 4
+  // Total                 = 24
+
+begin
+  if not vAborting then
+  begin
+    // Evita que uma segunda chamada sobrescreva a primeira
+    vAborting := True;
+
+    if (Error = ERROR_NONE) then
+      TErrorCode(ErrorNo) := ERROR_UNDEFINED
+    else
+      TErrorCode(ErrorNo) := Error;
+
+    vAbortInfo.Source.UnitID := UnitID;
+    vAbortInfo.Source.ProcID := ProcID;
+
+    vAbortInfo.Source.FileName := FileName;
+    vAbortInfo.Source.LineNo := StrToIntDef(LineNo, 0);
 
     vAbortInfo.Basic := GetDebugInfo;
     vAbortInfo.Stack := GetDebugStack(cSkipFrames, cOffsetESP);
