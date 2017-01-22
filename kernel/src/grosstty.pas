@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit de driver de terminal.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 26/07/2014
+  Versao: 0.2.1
+  Data: 22/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc grosstty.pas
@@ -432,7 +432,8 @@ begin
         end;
 
     else
-      Abort(ERROR_TTY_INVALID_TOKEN, '{GrossTTY.ProcessCommand}');
+      Abort(ERROR_TTY_INVALID_TOKEN, UI_GROSSTTY, PI_PROCESSCOMMAND,
+        {$I %FILE%}, {$I %LINE%}, 'O escape passado nao eh valido!');
     end;
   end;
 end;
@@ -457,7 +458,8 @@ begin
   end
   }
   else
-    Abort(ERROR_TTY_INVALID_COMMAND, '{GrossTTY.ExecCommand}');
+    Abort(ERROR_TTY_INVALID_COMMAND, UI_GROSSTTY, PI_EXECCOMMAND,
+      {$I %FILE%}, {$I %LINE%}, 'O comando passado nao eh valido!');
 end;
 
 procedure TTYSendInfo;
