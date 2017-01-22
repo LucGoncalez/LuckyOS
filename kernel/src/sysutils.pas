@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit SysUtils, crosscompiler, que substitui a RTL normal.
   --------------------------------------------------------------------------
-  Versao: 0.4
-  Data: 21/12/2014
+  Versao: 0.4.1
+  Data: 25/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc sysutils.pas
@@ -180,7 +180,7 @@ begin
   if (vError = 0) then
     StrToInt := vTemp
   else
-    Abort(ERROR_SYSUTILS_INVALID_INTEGER, UI_SYSUTILS, PI_STRTOINT,
+    Abort(ERROR_SYSUTILS_INVALID_INTEGER, UI_SYSUTILS, FI_STRTOINT,
       {$I %FILE%}, {$I %LINE%}, 'Valor fornecido nao eh um inteiro valido!');
 end;
 
