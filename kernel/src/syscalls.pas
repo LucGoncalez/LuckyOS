@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit biblioteca de chamadas de sistema.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 26/07/2014
+  Versao: 0.2.1
+  Data: 21/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc syscalls.pas
@@ -39,7 +39,6 @@ unit SysCalls;
 interface
 
 uses SystemDef, ErrorsDef;
-
 
   procedure SysAbort(Error : TErrorCode; ErrorMsg : PChar; AbortRec : PAbortRec);
   procedure SysExit(Status : SInt);
@@ -85,6 +84,7 @@ function  SysClose(FD : UInt) : SInt;
 begin
   SysClose := DoCall(Sys_Close, FD);
 end;
+
 
 function  SysRead(FD : UInt; Buffer : Pointer; Count : SInt) : SInt;
 begin
