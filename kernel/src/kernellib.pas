@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit com funcionalidades do Kernel.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 23/12/2014
+  Versao: 0.3.1
+  Data: 25/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernellib.pas
@@ -151,7 +151,7 @@ begin
   if Assigned(AbortRec) then
   begin
     vTestI := (AbortRec^.Source.UnitID <> UI_UNDEFINED) and
-      (AbortRec^.Source.ProcID <> PI_UNDEFINED);
+      (AbortRec^.Source.FuncID <> FI_UNDEFINED);
 
     vTestN := Assigned(AbortRec^.Source.FileName) and (AbortRec^.Source.LineNo <> 0);
 
@@ -164,7 +164,7 @@ begin
       begin
         CWrite(GetUnitString(AbortRec^.Source.UnitID));
         CWrite('.');
-        CWrite(GetProcString(AbortRec^.Source.ProcID));
+        CWrite(GetFuncString(AbortRec^.Source.FuncID));
       end;
 
       if vTestN then

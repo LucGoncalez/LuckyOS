@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit com procedimentos de Depuracao.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 21/12/2014
+  Versao: 0.2.1
+  Data: 25/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc debuginfo.pas
@@ -59,7 +59,7 @@ type
   PDebugSource = ^TDebugSource;
   TDebugSource = record
     UnitID : TUnitID;
-    ProcID : TProcID;
+    FuncID : TFuncID;
     FileName : PChar;
     LineNo : UInt;
   end;

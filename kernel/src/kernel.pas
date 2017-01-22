@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit principal do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.6.1
-  Data: 23/12/2014
+  Versao: 0.6.2
+  Data: 25/12/2014
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernel.pas
@@ -275,7 +275,7 @@ var
 begin
   CWriteln;
   CSetColor(LightRed);
-  CWriteln('Entrado em IDLE...');
+  CWriteln('Entrando em IDLE...');
   CSetNormVideo;
   CWrite('Contador: ');
 
