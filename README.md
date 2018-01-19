@@ -1,6 +1,6 @@
-# LuckyOS-Full #
+# LuckyOS #
 
-**Repositório completo (FULL) do Projeto LOS**
+**Repositório principal do Projeto LOS**
 
 O objetivo do projeto é criar um sistema operacional simples, em Pascal e Assembly, um ToyOS (ou HobbyOS), com a única finalidade de aplicar os conhecimentos teóricos à prática. Portanto não espere que ele substitua os seu OS atual.
 
@@ -8,7 +8,7 @@ O objetivo do projeto é criar um sistema operacional simples, em Pascal e Assem
 
 ## Índice ##
 
-[Topo](#luckyos-full)
+[Topo](#luckyos)
 
 [O Projeto LOS](#o-projeto-los)
 
@@ -142,7 +142,7 @@ Para facilitar a organização dos Pulls e Issues utilizarei os seguintes Labels
 
   - **wontfix** - Marcado quando uma sugestão, embora válida, não funcione por alguma característica ainda não divulgada do projeto.
 
-  - **changed** - Marcado quando quando o Pull foi modificado e as modificações enviadas como novo Pull. 
+  - **changed** - Marcado quando quando o Pull foi modificado e as modificações enviadas como novo Pull.
 
 4. Auxiliares:
 
@@ -232,18 +232,18 @@ Para contribuir com este projeto siga as seguintes dicas:
 
 2. Crie um **fork** deste repositório no GitHub:
 
-  > https://github.com/LucGoncalez/LuckyOS-Full
+  > https://github.com/LucGoncalez/LuckyOS
 
 3. Faça um **clone** local do seu fork:
 
   ```
-  git clone git@github.com:<suaconta>/LuckyOS-Full.git
+  git clone git@github.com:<suaconta>/LuckyOS.git
   ```
 
 4. Adicione o repositório principal (o meu) ao seu local (usado para sincronização):
 
   ```
-  git remote add main https://github.com/LucGoncalez/LuckyOS-Full.git
+  git remote add main https://github.com/LucGoncalez/LuckyOS.git
   ```
 
 5. Sempre faça **fetch** do repositório principal para verificar se algo foi alterado:
@@ -256,7 +256,7 @@ Para contribuir com este projeto siga as seguintes dicas:
 
   ```
   git pull main master:master
-  git pull main dev:dev 
+  git pull main dev:dev
   ```
 
 7. Todas as modificações devem partir do branch **dev**. Portanto crie um branch de trabalho a partir de *dev*:
@@ -331,5 +331,5 @@ Para contribuir com este projeto siga as seguintes dicas:
 
 [Índice](#Índice)
 
-[Topo](#luckyos-full)
+[Topo](#luckyos)
 
