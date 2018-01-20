@@ -26,13 +26,25 @@
     Esta Unit e responsavel por mostrar o aviso interativo de NAO GARANTIA
   e o Copyright.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 20/03/2013
+  Versao: 0.1.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc copyrigh.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0320-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial
+  - Criado ShowWarning e Finish.
+  ------------------------------------------------------------------------
+  [2018-0112-2217] (v0.1.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit CopyRigh;
