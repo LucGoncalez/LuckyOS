@@ -25,13 +25,36 @@
   --------------------------------------------------------------------------
   Unit principal do compilador, crosscompiler, que substitui a RTL normal.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 06/09/2013
+  Versao: 0.3.1
+  Data: 11/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc system.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0429-0000] (v0.0) <Luciano Goncalez>
+
+  - Implementação inicial, RTL limpa.
+  ------------------------------------------------------------------------
+  [2013-0507-0000] (v0.1) <Luciano Goncalez>
+
+  - Adicionando rotinas Move, FillChar, FillByte, FillWord, FillDWord.
+  ------------------------------------------------------------------------
+  [2013-0510-0000] (v0.2) <Luciano Goncalez>
+
+  - Adicionando rotinas de trabalho com strings.
+  ------------------------------------------------------------------------
+  [2013-0906-0000] (v0.3) <Luciano Goncalez>
+
+  - Adicionando outras rotinas de trabalho com strings.
+  ------------------------------------------------------------------------
+  [2018-0111-2326] (v0.3.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit System;
