@@ -28,13 +28,33 @@
     Este arquivo eh uma variacao do BootBT.pas para ser compilado mais
   facilmente pelo FPC sem dependencias vazias.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 22/09/2013
+  Versao: 0.2.1
+  Data: 11/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc bootbt32.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0429-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Definições da tabela de boot em Pascal.
+  ------------------------------------------------------------------------
+  [2013-0614-0000] (v0.1.1) <Luciano Goncalez>
+
+  - Corrigindo falta de campo de versão.
+  ------------------------------------------------------------------------
+  [2013-0922-0000] (v0.2) <Luciano Goncalez>
+
+  - Adicionando suporte a mais informações sobre memória, coletadas pelo bootloader.
+  ------------------------------------------------------------------------
+  [2018-0111-2118] (v0.2.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit BootBT32;
