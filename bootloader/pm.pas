@@ -25,14 +25,31 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para controle do modo protegido.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 14/04/2013
+  Versao: 0.2.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc pm.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0407-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Criando LoadGDT e SetupGDT.
+  ------------------------------------------------------------------------
+  [2013-0414-0000] (v0.2) <Luciano Goncalez>
+
+  - Modificando atributos em SetupGDT.
+  ------------------------------------------------------------------------
+  [2018-0112-2247] (v0.2.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
+
 
 unit PM; {Protected Mode}
 
