@@ -25,13 +25,25 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos para obtencao de dados do processador.
 ; --------------------------------------------------------------------------
-; Versao: 0.1
-; Data: 22/03/2013
+; Versao: 0.1.1
+; Data: 12/01/2018
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj cpuinfo.asm
 ; ------------------------------------------------------------------------
 ; Executar: Nao executavel diretamente.
+;===========================================================================
+; Historico de versões
+; ------------------------------------------------------------------------
+; [2013-0322-0000] {v0.1} <Luciano Goncalez>
+;
+; - Implementação inicial
+; - Criado GetCPUInfoFlags.
+; ------------------------------------------------------------------------
+; [2018-0112-2057] (v0.1.1) <Luciano Goncalez>
+;
+; - Adicionando historico ao arquivo.
+; - Substituindo identação para espaços.
 ;===========================================================================
 
 GLOBAL GetCPUInfoFlags
