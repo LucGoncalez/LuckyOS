@@ -25,14 +25,35 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos da Int15h.
 ; --------------------------------------------------------------------------
-; Versao: 0.4
-; Data: 10/04/2013
+; Versao: 0.4.1
+; Data: 12/01/2018
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bios15.asm
 ; --------------------------------------------------------------------------
 ; Executar: Nao executavel diretamente.
 ;===========================================================================
+; Historico de versões
+; ------------------------------------------------------------------------
+; [2013-0325-0000] {v0.1} <Luciano Goncalez>
+;
+; - Implementação inicial.
+; - Criado BiosInt15x88, BiosInt15xE801L e BiosInt15xE801H.
+; ------------------------------------------------------------------------
+; [2013-0410-0000] {v0.3} <Luciano Goncalez>
+;
+; - Mudando rotinas para far.
+; ------------------------------------------------------------------------
+; [2013-0410-0000] {v0.4} <Luciano Goncalez>
+;
+; - Adicionando rotinas BiosInt15x24XX.
+; ------------------------------------------------------------------------
+; [2018-0112-2049] (v0.4.1) <Luciano Goncalez>
+;
+; - Adicionando historico ao arquivo.
+; - Substituindo identação para espaços.
+;===========================================================================
+
 
 GLOBAL BiosInt15x88, BiosInt15xE801L, BiosInt15xE801H
 GLOBAL BiosInt15x2400, BiosInt15x2401, BiosInt15x2402, BiosInt15x2403

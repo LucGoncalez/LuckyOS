@@ -25,14 +25,27 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para conversao e formatacao de strings.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 01/04/2013
+  Versao: 0.1.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc estrings.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0401-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Criado IntToStr, WordToStr, ByteToHex, WordToHex, DWordToHex, DWordToHex2, FillLeft e FillRight.
+  ------------------------------------------------------------------------
+  [2018-0112-2231] (v0.1.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
+
 
 unit EStrings;
 

@@ -26,8 +26,8 @@
     Este programa detecta a quantidade de memoria instalada.
   Mostrando os resultados.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 25/03/2013
+  Versao: 0.2.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b detecmem.pas
@@ -38,6 +38,21 @@
   * Se voce leu esse aviso acima, entao pode nao querer ficar respendo toda
   vez, para evitar isso basta acrescentar um ' :)' apos o nome, assim:
   > detecmem.exe :)
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0325-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  ------------------------------------------------------------------------
+  [2013-0325-0000] (v0.2) <Luciano Goncalez>
+
+  - Melhorando a resposta da detecção, devolvendo dados trabalhados.
+  ------------------------------------------------------------------------
+  [2018-0112-2305] (v0.2.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 program DetecMem;

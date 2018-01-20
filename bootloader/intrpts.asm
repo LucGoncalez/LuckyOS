@@ -25,14 +25,26 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos para controle de interrupcoes.
 ; --------------------------------------------------------------------------
-; Versao: 0.1
-; Data: 07/04/2013
+; Versao: 0.1.1
+; Data: 12/01/2018
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj intrpts.asm
 ; --------------------------------------------------------------------------
 ; Executar: Nao executavel diretamente.
 ;===========================================================================
+; Historico de versões
+; ------------------------------------------------------------------------
+; [2013-0407-0000] {v0.1} <Luciano Goncalez>
+;
+; - Implementação inicial
+; ------------------------------------------------------------------------
+; [2018-0112-2101] (v0.1.1) <Luciano Goncalez>
+;
+; - Adicionando historico ao arquivo.
+; - Substituindo identação para espaços.
+;===========================================================================
+
 
 GLOBAL DisableInt, DisableNMIs, EnableInt, EnableNMIs
 

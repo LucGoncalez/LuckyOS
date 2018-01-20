@@ -26,8 +26,8 @@
     Este programa detecta o tipo do dipositivo de video usado pela BIOS. E
   informacoes adicionais. Mostrando os resultados.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 24/03/2013
+  Versao: 0.1.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b deteccrt.pas
@@ -38,6 +38,17 @@
   * Se voce leu esse aviso acima, entao pode nao querer ficar respendo toda
   vez, para evitar isso basta acrescentar um ' :)' apos o nome, assim:
   > deteccpu.exe :)
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0324-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial - Programa de teste.
+  ------------------------------------------------------------------------
+  [2018-0112-2302] (v0.1.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 program DetecCRT;

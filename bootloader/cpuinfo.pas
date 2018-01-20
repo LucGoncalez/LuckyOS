@@ -25,13 +25,25 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para obtencao de dados do processador.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 22/03/2013
+  Versao: 0.1.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc cpuinfo.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0322-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial
+  - Criado DetectCPU, GetCPUInfo, GetCPUType, GetCPU_PM, GetCPU_PE, GetCPU_IA32 e GetCPU_ID.
+  ------------------------------------------------------------------------
+  [2018-0112-2220] (v0.1.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit CPUInfo;
@@ -179,7 +191,7 @@ begin
   GetCPU_PM := TestBitsByte(TCPUInfoResult(vCPUInfo).CPUFlags, CPU_PM);
 end;
 
-{Retorna se a CPU est� em Modo Protegido}
+{Retorna se a CPU está em Modo Protegido}
 function GetCPU_PE : Boolean;
 begin
   GetCPU_PE := TestBitsByte(TCPUInfoResult(vCPUInfo).CPUFlags, CPU_PE);

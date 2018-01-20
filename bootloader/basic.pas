@@ -25,13 +25,50 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos basicos usados por outras diversas Units.
   --------------------------------------------------------------------------
-  Versao: 0.7
-  Data: 20/09/2013
+  Versao: 0.7.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc basic.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0322-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial
+  - Criado TestBitsByte.
+  ------------------------------------------------------------------------
+  [2013-0324-0000] (v0.2) <Luciano Goncalez>
+
+  - Adicionado WordToHex.
+  ------------------------------------------------------------------------
+  [2013-0325-0000] (v0.3) <Luciano Goncalez>
+
+  - Adiciondado DWordToHex.
+  ------------------------------------------------------------------------
+  [2013-0330-0000] (v0.4) <Luciano Goncalez>
+
+  - Adiciondado FileExists, PFar16ToPLinear e PLinearToPFar16.
+  ------------------------------------------------------------------------
+  [2013-0401-0000] (v0.5) <Luciano Goncalez>
+
+  - Mudando o retorno de PFar16ToPLinear e PLinearToPFar16.
+  - Removendo WordToHex e DWordToHex.
+  ------------------------------------------------------------------------
+  [2013-0407-0000] (v0.6) <Luciano Goncalez>
+
+  - Adicionado LoWord e HiWord.
+  ------------------------------------------------------------------------
+  [2013-0920-0000] (v0.7) <Luciano Goncalez>
+
+  - Adicionando tipo ByteArray.
+  ------------------------------------------------------------------------
+  [2018-0112-2156] (v0.7.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit Basic;

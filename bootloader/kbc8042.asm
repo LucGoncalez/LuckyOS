@@ -25,14 +25,28 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimento para acessar o controlador de teclado 8042.
 ; --------------------------------------------------------------------------
-; Versao: 0.1
-; Data: 11/04/2013
+; Versao: 0.1.1
+; Data: 12/01/2018
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj kbc8042.asm
 ; ------------------------------------------------------------------------
 ; Executar: Nao executavel diretamente.
 ;===========================================================================
+; Historico de versões
+; ------------------------------------------------------------------------
+; [2013-0411-0000] {v0.1} <Luciano Goncalez>
+;
+; - Implementação inicial.
+; - Criando rotinas basicas.
+; ------------------------------------------------------------------------
+; [2018-0112-2107] (v0.1.1) <Luciano Goncalez>
+;
+; - Adicionando historico ao arquivo.
+; - Substituindo identação para espaços.
+;===========================================================================
+
+
 GLOBAL Read8042StatusReg, Write8042CommandReg
 GLOBAL Read8042OutputReg, Write8042DataReg
 GLOBAL Wait8042Empty, Wait8042Done

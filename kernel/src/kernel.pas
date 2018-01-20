@@ -25,13 +25,55 @@
   --------------------------------------------------------------------------
   Unit principal do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.6.2
-  Data: 25/12/2014
+  Versao: 0.6.3
+  Data: 11/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc kernel.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0429-0000] (v0.0) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Kernel compilado de ASM+PAS->ELF->BIN.
+  ------------------------------------------------------------------------
+  [2013-0507-0000] (v0.1) <Luciano Goncalez>
+
+  - Usando funcionalidades de grosscrt.
+  - Kernel capaz de escrever constantes string.
+  ------------------------------------------------------------------------
+  [2013-0510-0000] (v0.2) <Luciano Goncalez>
+
+  - Kernel capaz de escrever diversos formatos.
+  ------------------------------------------------------------------------
+  [2013-0906-0000] (v0.3) <Luciano Goncalez>
+
+  - Implementação de bibliotecas de sistema e criação de esboço das chamadas de sistema.
+  ------------------------------------------------------------------------
+  [2013-0922-0000] (v0.4) <Luciano Goncalez>
+
+  - Adicionando suporte a mais informações sobre memória.
+  ------------------------------------------------------------------------
+  [2014-0726-0000] (v0.5) <Luciano Goncalez>
+
+  - Adequando a nova Abort.
+  ------------------------------------------------------------------------
+  [2014-1223-0000] (v0.6.1) <Luciano Goncalez>
+
+  - Adicionando informações de localização nos fontes.
+  ------------------------------------------------------------------------
+  [2014-1225-0000] (v0.6.2) <Luciano Goncalez>
+
+  - Mudando TProcID -> TFuncID.
+  - Correção ortográfica.
+  ------------------------------------------------------------------------
+  [2018-0111-2118] (v0.6.3) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit kernel;

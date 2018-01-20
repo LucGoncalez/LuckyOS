@@ -25,13 +25,47 @@
 ; --------------------------------------------------------------------------
 ; Esta Lib possui procedimentos que auxiliam o boot.
 ; --------------------------------------------------------------------------
-; Versao: 0.6
-; Data: 14/04/2013
+; Versao: 0.6.1
+; Data: 12/01/2018
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f obj bootaux.asm
 ; ------------------------------------------------------------------------
 ; Executar: Nao executavel diretamente.
+;===========================================================================
+; Historico de versões
+; ------------------------------------------------------------------------
+; [2013-0330-0000] {v0.1} <Luciano Goncalez>
+;
+; - Implementação inicial.
+; - Criado CopyFAR16 e JumpFAR16.
+; ------------------------------------------------------------------------
+; [2013-0401-0000] {v0.2} <Luciano Goncalez>
+;
+; - Mudando os tipos.
+; ------------------------------------------------------------------------
+; [2013-0406-0000] {v0.3} <Luciano Goncalez>
+;
+; - Substituido JumpFAR16 por GoKernel16.
+; - Adicionado GetDS, GetSS e GetSP.
+; ------------------------------------------------------------------------
+; [2013-0407-0000] {v0.4} <Luciano Goncalez>
+;
+; - Substituido GoKernel16 por GoKernel16PM.
+; ------------------------------------------------------------------------
+; [2013-0414-0000] {v0.5} <Luciano Goncalez>
+;
+; - Criando CopyLinear, EnableUnreal.
+; - Removendo CopyFAR16, GetDS, GetSS, GetSP.
+; ------------------------------------------------------------------------
+; [2013-0414-0000] {v0.6} <Luciano Goncalez>
+;
+; - Substituindo GoKernel16PM por GoKernel32PM.
+; ------------------------------------------------------------------------
+; [2018-0112-2054] (v0.6.1) <Luciano Goncalez>
+;
+; - Adicionando historico ao arquivo.
+; - Substituindo identação para espaços.
 ;===========================================================================
 
 GLOBAL EnableUnreal, CopyLinear, GoKernel32PM

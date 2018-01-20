@@ -25,13 +25,33 @@
   --------------------------------------------------------------------------
   Unit com procedimentos de Depuracao.
   --------------------------------------------------------------------------
-  Versao: 0.2.1
-  Data: 25/12/2014
+  Versao: 0.2.2
+  Data: 11/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc debuginfo.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0905-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  ------------------------------------------------------------------------
+  [2014-1221-0000] (v0.2) <Luciano Goncalez>
+
+  - Adicionando suporte para conversão dos flags da cpu para str.
+  - Adicionando mais informações de localização na depuração.
+  ------------------------------------------------------------------------
+  [2014-1225-0000] (v0.2.1) <Luciano Goncalez>
+
+  - Mudando TProcID -> TFuncID.
+  ------------------------------------------------------------------------
+  [2018-0111-2133] (v0.2.2) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit DebugInfo;

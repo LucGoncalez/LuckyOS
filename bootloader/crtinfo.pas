@@ -25,14 +25,40 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para obtencao de dados do CRT.
   --------------------------------------------------------------------------
-  Versao: 0.3
-  Data: 10/04/2013
+  Versao: 0.3.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc crtinfo.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0324-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Criado DetectCRT, GetCRTInfo, GetCRTMode, GetCRTType, GetCRT_Ex, GetCRT_80C, GetCRT_MDA
+    GetCRT_Color, GetCRT_Error,  GetCRTCols, GetCRTRows, GetCRTSeg e GetCRTAddr6845.
+  ------------------------------------------------------------------------
+  [2013-0331-0000] (v0.1.1) <Luciano Goncalez>
+
+  - Revisão.
+  ------------------------------------------------------------------------
+  [2013-0401-0000] (v0.2) <Luciano Goncalez>
+
+  - Mudando os tipos.
+  ------------------------------------------------------------------------
+  [2013-0410-0000] (v0.3) <Luciano Goncalez>
+
+  - Usando a Unit BIOS em vez de importar os objetos.
+  ------------------------------------------------------------------------
+  [2018-0112-2224] (v0.3.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
+
 
 unit CRTInfo;
 

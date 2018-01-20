@@ -26,8 +26,8 @@
 ;   Arquivo escrito em Assembly que "envolve" o código escrito em linguagem
 ; de alto nivel, ele server para fazer a inicializacao inicial do kernel.
 ; --------------------------------------------------------------------------
-; Versao: 0.2
-; Data: 22/09/2013
+; Versao: 0.2.1
+; Data: 11/01/2018
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f elf32 kwrap.asm
@@ -35,6 +35,27 @@
 ; Executar: Este arquivo precisa ser linkado com o LD para ser carregado
 ;   pelo bootloader.
 ;===========================================================================
+; Historico de versões
+; ------------------------------------------------------------------------
+; [2013-0428-0000] {v0.0} <Luciano Goncalez>
+;
+; - Substitui kernel.asm.
+; - Kernel compilado de ASM->ELF->BIN.
+; ------------------------------------------------------------------------
+; [2013-0429-0000] {v0.1} <Luciano Goncalez>
+;
+; - Chama o kernel escrito em kernel.pas.
+; ------------------------------------------------------------------------
+; [2013-0922-0000] {v0.2} <Luciano Goncalez>
+;
+; - Adicionando novo cabeçalho do kernel, com informações de realocação.
+; ------------------------------------------------------------------------
+; [2018-0111-2336] (v0.2.1) <Luciano Goncalez>
+;
+; - Adicionando historico ao arquivo.
+; - Substituindo identação para espaços.
+;===========================================================================
+
 
 ; configuracao do kernel
   CPUModel    EQU 3           ; 80_3_86

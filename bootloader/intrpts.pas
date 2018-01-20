@@ -25,13 +25,25 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para controle de interrupcoes.
   --------------------------------------------------------------------------
-  Versao: 0.1
-  Data: 07/04/2013
+  Versao: 0.1.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc intrpts.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0407-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Criando DisableInt, EnableInt, DisableNMIs e EnableNMIs.
+  ------------------------------------------------------------------------
+  [2018-0112-2237] (v0.1.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit Intrpts;

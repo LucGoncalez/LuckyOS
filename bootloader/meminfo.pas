@@ -25,13 +25,37 @@
   --------------------------------------------------------------------------
   Esta Unit possui procedimentos para obtencao de memoria.
   --------------------------------------------------------------------------
-  Versao: 0.4
-  Data: 10/04/2013
+  Versao: 0.4.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc meminfo.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0325-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Criado DetectMem, GetBlocksCount, GetMemoryBase, GetMemoryLimit e GetMemorySize.
+  ------------------------------------------------------------------------
+  [2013-0325-0000] (v0.2) <Luciano Goncalez>
+
+  - Melhorando a resposta da detecção, devolvendo dados trabalhados.
+  ------------------------------------------------------------------------
+  [2013-0402-0000] (v0.3) <Luciano Goncalez>
+
+  - Mudando os tipos.
+  ------------------------------------------------------------------------
+  [2013-0410-0000] (v0.4) <Luciano Goncalez>
+
+  - Usando a Unit BIOS em vez de importar os objetos.
+  ------------------------------------------------------------------------
+  [2018-0112-2252] (v0.4.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit MemInfo;
