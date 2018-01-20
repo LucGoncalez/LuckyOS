@@ -27,12 +27,44 @@
 #   Arquivo de shell scritp que tem por funcao compilar e criar a imagem do
 # kernel em uma unica operacao.
 # --------------------------------------------------------------------------
-# Versao: 0.5
-# Data: 22/09/2013
+# Versao: 0.5.1
+# Data: 11/01/2018
 # --------------------------------------------------------------------------
 # Executar: Executado em um terminal
 # > ./build
 # ==========================================================================
+# Historico de versões
+# --------------------------------------------------------------------------
+# [2013-0428-0000] {v0.0} <Luciano Goncalez>
+#
+# - Implementação inicial.
+# --------------------------------------------------------------------------
+# [2013-0429-0000] {v0.1} <Luciano Goncalez>
+#
+# - Suporte a compilação em Pascal.
+# --------------------------------------------------------------------------
+# [2013-0507-0000] {v0.2} <Luciano Goncalez>
+#
+# - Adicionando fontes.
+# --------------------------------------------------------------------------
+# [2013-0510-0000] {v0.3} <Luciano Goncalez>
+#
+# - Adicionando fontes.
+# --------------------------------------------------------------------------
+# [2013-0906-0000] {v0.4} <Luciano Goncalez>
+#
+# - Adicionando arquivos fontes e modificando a compilação.
+# --------------------------------------------------------------------------
+# [2013-0922-0000] {v0.5} <Luciano Goncalez>
+#
+# - Adicionando arquivo fonte.
+# --------------------------------------------------------------------------
+# [2018-0111-2035] {v0.5.1} <Luciano Goncalez>
+#
+# - Adicionando historico ao arquivo.
+# - Substituindo identação para espaços.
+# ==========================================================================
+
 
 # Variaveis usadas como filtros
 finalfiles="*.bin *.map"
