@@ -27,14 +27,54 @@
 ;
 ; Ele "roda" um caracter na primeira linha, coluna 70.
 ; --------------------------------------------------------------------------
-; Versao: 0.1 (pkernel v0.7)
-; Data: 14/06/2013
+; Versao: 0.1.1 (pkernel v0.7)
+; Data: 12/01/2018
 ; --------------------------------------------------------------------------
 ; Compilar: Compilavel pelo nasm (montar)
 ; > nasm -f bin -o kernel.bin kernel.asm
 ; ------------------------------------------------------------------------
 ; Executar: Executado pelo LoadLOS.
 ;===========================================================================
+; Historico de versões
+; ------------------------------------------------------------------------
+; [2013-0330-0000] {pkrnl-0.1} <Luciano Goncalez>
+;
+; - Implementação inicial.
+; ------------------------------------------------------------------------
+; [2013-0414-0000] {pkrnl-0.2} <Luciano Goncalez>
+;
+; - Kernel recebe segmento de video em AX.
+; ------------------------------------------------------------------------
+; [2013-0414-0000] {pkrnl-0.3} <Luciano Goncalez>
+;
+; - Kernel em 32 bits.
+; ------------------------------------------------------------------------
+; [2013-0419-0000] {pkrnl-0.4} <Luciano Goncalez>
+;
+; - Adicionada tabela de boot no kernel.
+; ------------------------------------------------------------------------
+; [2013-0421-0000] {pkrnl-0.5} <Luciano Goncalez>
+;
+; - Adicionada suporte a tabela de bootloader.
+; ------------------------------------------------------------------------
+; [2013-0423-0000] {kernel-0.0} <Luciano Goncalez>
+;
+; - Muda nome e configurações de heap e stack para extensivel.
+; ------------------------------------------------------------------------
+;[2013-0614-0000] {kernel-0.1} <Luciano Goncalez>
+;
+; - Corrigindo falta de campo de versão.
+; ------------------------------------------------------------------------
+; [2018-0112-2336] (v0.1.1) <Luciano Goncalez>
+;
+; - Adicionando historico ao arquivo.
+; - Substituindo identação para espaços.
+; ------------------------------------------------------------------------
+;
+; SUBSTITUIDA!
+;
+;===========================================================================
+
 
 ;   Um ponto chave aqui é criar uma tabela de boot fornecidada pelo kernel
 ; que de informacoes ao bootloader de como o kernel quer ser carregado e
