@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Esta Unit contem a tabela de boot fornecida pelo bootloader.
   --------------------------------------------------------------------------
-  Versao: 0.2
-  Data: 20/09/2013
+  Versao: 0.2.1
+  Data: 12/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc bootbt.pas
@@ -35,6 +35,26 @@
   > fpc bootbt.pas
   ------------------------------------------------------------------------
   Executar: Nao executavel diretamente; Unit.
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0421-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Adiciona tabela com informações do bootloader.
+  ------------------------------------------------------------------------
+  [2013-0614-0000] (v0.1.1) <Luciano Goncalez>
+
+  - Adicionando campo de versão.
+  ------------------------------------------------------------------------
+  [2013-0920-0000] (v0.2) <Luciano Goncalez>
+
+  - Adicionando informações sobre o uso da memória.
+  ------------------------------------------------------------------------
+  [2018-0112-2214] (v0.2.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
 
 unit BootBT;
