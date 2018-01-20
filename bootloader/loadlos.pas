@@ -26,8 +26,8 @@
     Este programa eh um BootLoader, responsavel por carregar o kernel para
   a memoria e executa-lo.
   --------------------------------------------------------------------------
-  Versao: 0.15
-  Data: 22/09/2013
+  Versao: 0.15.1
+  Data: 11/01/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel pelo Turbo Pascal 5.5 (Free)
   > tpc /b loadlos.pas
@@ -38,7 +38,88 @@
   * Se voce leu esse aviso acima, entao pode nao querer ficar respendo toda
   vez, para evitar isso basta acrescentar um ' :)' apos o nome, assim:
   > detecmem.exe :)
+============================================================================
+  Historico de versões
+  ------------------------------------------------------------------------
+  [2013-0330-0000] (v0.1) <Luciano Goncalez>
+
+  - Implementação inicial.
+  - Kernel de 16 bits rodando na memória convencional.
+  ------------------------------------------------------------------------
+  [2013-0402-0000] (v0.2) <Luciano Goncalez>
+
+  - Mudando os tipos.
+  - Revisão.
+  ------------------------------------------------------------------------
+  [2013-0406-0000] (v0.3) <Luciano Goncalez>
+
+  - Substituido JumpToLinear por GoKernel16.
+  - Modo de chamada do kernel reescrito, usando GoKernel16.
+  ------------------------------------------------------------------------
+  [2013-0407-0000] (v0.4) <Luciano Goncalez>
+
+  - Adicionando rotinas para configurar o modo protegido.
+  - Kernel rodando no Modo Protegido de 16 bits.
+  ------------------------------------------------------------------------
+  [2013-0410-0000] (v0.5) <Luciano Goncalez>
+
+  - Reedição do código anterior.
+  - Usando a Unit BIOS em vez de importar.
+  ------------------------------------------------------------------------
+  [2013-0413-0000] (v0.6) <Luciano Goncalez>
+
+  - Adição de suporte ao A20.
+  ------------------------------------------------------------------------
+  [2013-0413-0000] (v0.7) <Luciano Goncalez>
+
+  - Movendo segmentos de dados e pilha memória superior.
+  ------------------------------------------------------------------------
+  [2013-0414-0000] (v0.8) <Luciano Goncalez>
+
+  - Kernel de 16 bits rodando na memória superior.
+  ------------------------------------------------------------------------
+  [2013-0414-0000] (v0.9) <Luciano Goncalez>
+
+  - Acessando vídeo com descritor de 32 bits.
+  ------------------------------------------------------------------------
+  [2013-0414-0000] (v0.10) <Luciano Goncalez>
+
+  - Suporte a kernel de 32 bits adicionando.
+  ------------------------------------------------------------------------
+  [2013-0418-0000] (v0.11) <Luciano Goncalez>
+
+  - Código reescrito.
+  ------------------------------------------------------------------------
+  [2013-0421-0000] (v0.12) <Luciano Goncalez>
+
+  - Adicionando suporte a kernel com tabela de boot.
+  ------------------------------------------------------------------------
+  [2013-0421-0000] (v0.13) <Luciano Goncalez>
+
+  - Fornece tabela de informações coletadas durante o boot ao kernel.
+  ------------------------------------------------------------------------
+  [2013-0423-0000] (v0.14) <Luciano Goncalez>
+
+  - Adicionando suporte a parametros de linha de comando.
+  ------------------------------------------------------------------------
+  [2013-0427-0000] (v0.14.1) <Luciano Goncalez>
+
+  - Corrigindo endereço final do bloco de código.
+  ------------------------------------------------------------------------
+  [2013-0614-0000] (v0.14.2) <Luciano Goncalez>
+
+  - Corrigindo falta de campo de versão da tabela de boot do kernel.
+  ------------------------------------------------------------------------
+  [2013-0922-0000] (v0.15) <Luciano Goncalez>
+
+  - Adicionando informação sobre o uso da memória e melhorias.
+  ------------------------------------------------------------------------
+  [2018-0111-2118] (v0.15.1) <Luciano Goncalez>
+
+  - Adicionando historico ao arquivo.
+  - Substituindo identação para espaços.
 ===========================================================================}
+
 
 program LoadLOS;
 
