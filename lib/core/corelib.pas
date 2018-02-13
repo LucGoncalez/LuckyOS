@@ -25,7 +25,7 @@
   --------------------------------------------------------------------------
   Unit com funcionalidades do Núcleo.
   --------------------------------------------------------------------------
-  Versao: 0.4
+  Versao: 0.4.1
   Data: 13/02/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
@@ -59,6 +59,10 @@
   [2018-0213-1117] (v0.4) <Luciano Goncalez>
 
   - Renomeando unit KernelLib -> CoreLib.
+  ------------------------------------------------------------------------
+  [2018-0213-1345] (v0.4.1) <Luciano Goncalez>
+
+  - Adicionando capacidade de compilação condicional do bootloader.
 ===========================================================================}
 
 unit CoreLib;
@@ -166,9 +170,22 @@ begin
 
   CSetBackground(Red);
   CSetColor(White);
-  CLineFeed(2);
+  CClrScr;
 
-  CWriteln('Kernel Panic!');
+  {$IFDEF KERNEL}
+    CWriteln('Kernel Panic!');
+  {$ENDIF}
+
+  {$IFDEF LOADER}
+    CWriteln('Loader Panic!');
+  {$ENDIF}
+
+  {$IFNDEF KERNEL}
+    {$IFNDEF LOADER}
+      CWriteln('Panic!');
+    {$ENDIF}
+  {$ENDIF}
+
   CWrite('Error: ');
   CWrite(GetErrorString(Error));
   CWrite(' <ErrorNo: ');
