@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit biblioteca de chamadas de sistema.
   --------------------------------------------------------------------------
-  Versao: 0.2.2
-  Data: 11/01/2018
+  Versao: 0.2.3
+  Data: 13/02/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc syscalls.pas
@@ -51,9 +51,25 @@
 
   - Adicionando historico ao arquivo.
   - Substituindo identação para espaços.
+  ------------------------------------------------------------------------
+  [2018-0213-1406] (v0.2.3) <Luciano Goncalez>
+
+  - Adicionando capacidade de compilação condicional do bootloader.
 ===========================================================================}
 
 unit SysCalls;
+
+{$IFDEF LOADER}
+  {$IFNDEF DIRECTCALL}
+    {$DEFINE DIRECTCALL}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF KERNEL}
+  {$IFNDEF DIRECTCALL}
+    {$DEFINE DIRECTCALL}
+  {$ENDIF}
+{$ENDIF}
 
 interface
 
@@ -72,7 +88,7 @@ uses SystemDef, ErrorsDef;
 implementation
 
 uses SysCallsDef
-{$IFDEF KERNEL}
+{$IFDEF DIRECTCALL}
   , SystemCalls
 {$ENDIF}
 ;
@@ -116,7 +132,7 @@ begin
 end;
 
 
-{$IFDEF KERNEL}
+{$IFDEF DIRECTCALL}
 function DoCall(CallNo : TSysCall; Param1 : UInt) : SInt;
 begin
   DoCall := DirectCall(UInt(CallNo), Param1, 0, 0);
