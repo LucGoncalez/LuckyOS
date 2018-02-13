@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit com procedimentos de Depuracao.
   --------------------------------------------------------------------------
-  Versao: 0.2.2
-  Data: 11/01/2018
+  Versao: 0.2.3
+  Data: 13/02/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc debuginfo.pas
@@ -52,9 +52,25 @@
 
   - Adicionando historico ao arquivo.
   - Substituindo identação para espaços.
+  ------------------------------------------------------------------------
+  [2018-0213-1408] (v0.2.3) <Luciano Goncalez>
+
+  - Adicionando capacidade de compilação condicional do bootloader.
 ===========================================================================}
 
 unit DebugInfo;
+
+{$IFDEF LOADER}
+  {$IFNDEF DEBUGEX}
+    {$DEFINE DEBUGEX}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF KERNEL}
+  {$IFNDEF DEBUGEX}
+    {$DEFINE DEBUGEX}
+  {$ENDIF}
+{$ENDIF}
 
 interface
 
@@ -97,7 +113,7 @@ type
     EIP, ESP, EBP : Pointer;
   end;
 
-{$IFDEF KERNEL}
+{$IFDEF DEBUGEX}
   PDebugEx = ^TDebugEx;
   TDebugEx = record
     CR0, CR2, CR3, CR4 : LongWord;
@@ -131,7 +147,7 @@ type
   // Obtem eflags
   function GetEFlags : LongWord;
 
-{$IFDEF KERNEL}
+{$IFDEF DEBUGEX}
   // Obtem registradores de controle
   function GetCR0 : LongWord;
   function GetCR2 : LongWord;
@@ -155,7 +171,7 @@ type
   function GetDebugInfo : TDebugBas;
   function GetDebugStack(SkipFrames, OffsetESP : LongWord) : TDebugStack;
 
-  {$IFDEF KERNEL}
+  {$IFDEF DEBUGEX}
     function GetDebugEx : TDebugEx;
   {$ENDIF}
 
@@ -292,7 +308,7 @@ asm
 end;
 
 
-{$IFDEF KERNEL}
+{$IFDEF DEBUGEX}
   { Retorna o valor do registrador CR0 }
   function GetCR0 : LongWord; assembler; nostackframe;
   asm
@@ -635,7 +651,7 @@ begin
 end;
 
 
-{$IFDEF KERNEL}
+{$IFDEF DEBUGEX}
 function GetDebugEx : TDebugEx;
 var
   RegCR0, RegCR2, RegCR3, RegCR4 : LongWord;
