@@ -26,8 +26,8 @@
 #   Este é o arquivo de makefile, ele é responsavel pelas construção do
 # sistema.
 # --------------------------------------------------------------------------
-# Versao: 0.1
-# Data: 24/01/2018
+# Versao: 0.2
+# Data: 13/02/2018
 # --------------------------------------------------------------------------
 # Uso:
 # > make
@@ -39,7 +39,12 @@
 # [2018-0124-2151] {v0.1} <Luciano Goncalez>
 #
 # - Implementação inicial.
+# ------------------------------------------------------------------------
+# [2018-0213-1436] {v0.2} <Luciano Goncalez>
+#
+# - Adicionando funcionalidades de construção e instalação do bootloader.
 #============================================================================
+
 
 
 ## Configurações gerais ##
@@ -56,6 +61,9 @@ COMPILER = $(shell which $(COMPILER_NAME))
 LINKER = $(shell which $(LINKER_NAME))
 
 export ASSEMBLER COMPILER LINKER
+
+BOOLOADER_SECTORS = 3
+
 
 
 ## Checagens ##
@@ -99,6 +107,7 @@ linker_error:
 	@exit 1
 endif
 
+
 MAIN_DIR := $(CURDIR)
 
 CONFIG_DIR := $(MAIN_DIR)/config
@@ -107,17 +116,31 @@ BUILD_DIR := $(MAIN_DIR)/build
 export MAIN_DIR CONFIG_DIR BUILD_DIR
 
 
-.PHONY: all clean distclean kernel kernelrelease
 
-all: kernel
+.PHONY: all clean distclean kernel kernelrelease bootloader boot bootrelease image\
+	install_vbr install_stage2 install_boot install_kernel\
+	_build _bootloader_build _imagedir
+
+
+
+all: image
+
 
 clean:
 	rm -rf $(BUILD_DIR)/*
 
 distclean: clean
-	-rm *.map *.bin
+	-rm *.map *.bin *.img
 	-rmdir $(BUILD_DIR)
+	-sudo umount $(MAIN_DIR)/imagedisk
+	-rmdir $(MAIN_DIR)/imagedisk
 
+
+_build:
+	-mkdir $(BUILD_DIR)
+
+
+# Kernel
 
 kernel: kernel.bin
 
@@ -125,14 +148,78 @@ kernelrelease:
 	@$(MAKE) -sf Makefile.kernel release
 
 
-build:
-	mkdir $(BUILD_DIR)
-
-
 kernel.bin: $(BUILD_DIR)/kernel.bin
 	cp $(BUILD_DIR)/kernel.bin .
 	cp $(BUILD_DIR)/kernel.map .
 
-$(BUILD_DIR)/kernel.bin: clean build
+$(BUILD_DIR)/kernel.bin: _build
+	make clean
 	cp $(MAIN_DIR)/Makefile.kernel $(BUILD_DIR)/Makefile
 	@$(MAKE) -C $(BUILD_DIR)
+
+
+# Bootloader
+
+bootloader: vbr.bin	boot.bin
+
+boot: bootloader
+
+bootrelease:
+	@$(MAKE) -sf Makefile.bootloader release
+
+
+_bootloader_build: _build
+	make clean
+	cp $(MAIN_DIR)/Makefile.bootloader $(BUILD_DIR)/Makefile
+	@$(MAKE) -C $(BUILD_DIR)
+
+
+vbr.bin: $(BUILD_DIR)/stage1.bin
+	cp $(BUILD_DIR)/stage1.bin vbr.bin
+
+boot.bin: $(BUILD_DIR)/stage2.bin
+	cp $(BUILD_DIR)/stage2.bin boot.bin
+	cp $(BUILD_DIR)/stage2.map .
+
+
+$(BUILD_DIR)/stage1.bin: _bootloader_build
+
+$(BUILD_DIR)/stage2.bin: _bootloader_build
+
+
+# Image
+
+image: install_boot install_kernel
+
+
+install_boot: install_vbr install_stage2
+
+
+install_vbr: vbr.bin boot.img
+	cp $(MAIN_DIR)/vbr.bin $(MAIN_DIR)/temp.img
+	dd if=$(MAIN_DIR)/boot.img of=$(MAIN_DIR)/temp.img bs=1 skip=11 seek=11 count=51 conv=notrunc
+	dd if=$(MAIN_DIR)/temp.img of=$(MAIN_DIR)/boot.img bs=512 count=$(BOOLOADER_SECTORS) conv=notrunc
+	rm temp.img
+	sync
+
+install_stage2:	boot.bin boot.img _imagedir
+	sudo cp $(MAIN_DIR)/boot.bin $(MAIN_DIR)/imagedisk
+	sync
+
+install_kernel: kernel.bin boot.img _imagedir
+	sudo cp $(MAIN_DIR)/kernel.bin $(MAIN_DIR)/imagedisk
+	sync
+
+
+boot.img:
+	dd if=/dev/zero of=$(MAIN_DIR)/boot.img bs=512 count=2880
+	mkfs -t fat -R $(BOOLOADER_SECTORS) -n LOSBOOTDISK $(MAIN_DIR)/boot.img
+
+_imagedir: imagedisk
+	@echo "Conteudo de imagedisk:"
+	@sudo ls -1 $(MAIN_DIR)/imagedisk
+	-sudo umount $(MAIN_DIR)/imagedisk
+	sudo mount $(MAIN_DIR)/boot.img $(MAIN_DIR)/imagedisk
+
+imagedisk:
+	mkdir $(MAIN_DIR)/imagedisk
