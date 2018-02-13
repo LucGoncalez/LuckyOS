@@ -1,0 +1,143 @@
+#===========================================================================
+# Este arquivo pertence ao Projeto do Sistema Operacional LuckyOS (LOS).
+# --------------------------------------------------------------------------
+# Copyright (C) 2013 - Luciano L. Goncalez
+# --------------------------------------------------------------------------
+# a.k.a.: Master Lucky
+# eMail : master.lucky.br@gmail.com
+# Home  : http://lucky-labs.blogspot.com.br
+# ==========================================================================
+# Este programa e software livre; voce pode redistribui-lo e/ou modifica-lo
+# sob os termos da Licenca Publica Geral GNU, conforme publicada pela Free
+# Software Foundation; na versao 2 da Licenca.
+#
+# Este programa e distribuido na expectativa de ser util, mas SEM QUALQUER
+# GARANTIA; sem mesmo a garantia implicita de COMERCIALIZACAO ou de
+# ADEQUACAO A QUALQUER PROPOSITO EM PARTICULAR. Consulte a Licenca Publica
+# Geral GNU para obter mais detalhes.
+#
+# Voce deve ter recebido uma copia da Licenca Publica Geral GNU junto com
+# este programa; se nao, escreva para a Free Software Foundation, Inc., 59
+# Temple Place, Suite 330, Boston, MA 02111-1307, USA. Ou acesse o site do
+# GNU e obtenha sua licenca: http://www.gnu.org/
+# ==========================================================================
+# Makefile (Bootloader)
+# --------------------------------------------------------------------------
+#   Este é o arquivo de makefile, ele é responsavel pelas construção do
+# sistema.
+# --------------------------------------------------------------------------
+# Versao: 0.1
+# Data: 13/02/2018
+# --------------------------------------------------------------------------
+# Uso:
+# > make
+# ------------------------------------------------------------------------
+# Executar: Arquivo de configuracao.
+#============================================================================
+# Historico de versões
+# ------------------------------------------------------------------------
+# [2018-0213-1435] {v0.1} <Luciano Goncalez>
+#
+# - Implementação inicial.
+#============================================================================
+
+
+# Variáveis de versão #
+VERSION_MAJOR = 0
+VERSION_MINOR = 1
+VERSION_REVISION = 0
+VERSION_BUILD =
+BOOT_NAME = LOS-LOADER
+
+# Versão
+ifndef VERSION_BUILD
+	BOOT_RELEASE = $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_REVISION)
+else
+	BOOT_RELEASE = $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_REVISION)-$(VERSION_BUILD)
+endif
+
+
+# Variaveis usadas pelo NASM #
+ASSEMBLER_OPTIONS := -f elf32
+
+STAGE1_OPTIONS := -f bin -o stage1.bin
+STAGE1_SOURCE := vbr.asm
+
+
+# Variaveis usadas no FPC #
+
+# Opcoes
+#
+# -n        - ignora arquivo de configuracao padrao
+# @fpc.cfg  - informa um arquivo de configuracao
+# -Xd       - ignora bibliotecas padrao (crosscompiler!)
+# -Aelf     - forca a sempre criar arquivos objetos formato elf
+# -Tlinux   - compila formato para linux (mais limpo)
+COMPILER_OPTIONS := -n @$(CONFIG_DIR)/fpc.cfg -Xd -Aelf -Tlinux
+
+# Simbolos definidos para compilação condicional de partes compartilhadas
+# entre o Kernel e aplicações
+COMPILER_SYMBOLS = -dLOADER
+
+
+# Variaveis usadas pelo LINKER #
+LINKER_OPTIONS = -T $(CONFIG_DIR)/bootloader_ld.cfg -Map stage2.map
+
+
+LIBS_DEPS = bootloader librtl drivers libstdlibs libsystem liboth libcore libdrivers
+
+BOOTLOADER_DEPS = system.o sysutils.o syscalls.o systemcalls.o errorsdef.o stdlib.o stdio.o\
+	filesystem.o consoleio.o grosstty.o grosscrt.o debuginfo.o tinystrscanner.o corelib.o
+
+
+.PHONY: all $(LIBS_DEPS) build release
+
+
+all: $(LIBS_DEPS) build
+
+build: stage1.bin stage2.bin
+
+release:
+	@echo $(BOOT_NAME)-$(BOOT_RELEASE)
+
+
+stage1.bin: $(STAGE1_SOURCE)
+	$(ASSEMBLER) $(STAGE1_OPTIONS) $(STAGE1_SOURCE)
+
+stage2.bin:	boot.o bwrap.o
+	$(LINKER) $(LINKER_OPTIONS) boot.o $(BOOTLOADER_DEPS)
+
+
+boot.o: boot.pas
+	$(COMPILER) $(COMPILER_OPTIONS) $(COMPILER_SYMBOLS) boot.pas
+
+bwrap.o: bwrap.asm
+	$(ASSEMBLER) $(ASSEMBLER_OPTIONS) $^
+
+
+
+# LIBS_DEPS:
+
+bootloader:
+	ln -s $(MAIN_DIR)/bootloader/* .
+
+librtl:
+	ln -s $(MAIN_DIR)/lib/fpc-rtl/* .
+
+drivers:
+	ln -s $(MAIN_DIR)/drivers/* .
+
+libstdlibs:
+	ln -s $(MAIN_DIR)/lib/stdlibs/* .
+
+libsystem:
+	ln -s $(MAIN_DIR)/lib/system/* .
+
+liboth:
+	ln -s $(MAIN_DIR)/lib/oth/* .
+
+libcore:
+	ln -s $(MAIN_DIR)/lib/core/* .
+
+libdrivers:
+	ln -s $(MAIN_DIR)/lib/drivers/* .
