@@ -26,8 +26,8 @@
 #   Este é o arquivo de makefile, ele é responsavel pelas construção do
 # sistema.
 # --------------------------------------------------------------------------
-# Versao: 0.1
-# Data: 24/01/2018
+# Versao: 0.1.1
+# Data: 13/02/2018
 # --------------------------------------------------------------------------
 # Uso:
 # > make
@@ -39,6 +39,10 @@
 # [2018-0124-2152] {v0.1} <Luciano Goncalez>
 #
 # - Implementação inicial.
+# ------------------------------------------------------------------------
+# [2018-0213-1121] {v0.1.1} <Luciano Goncalez>
+#
+# - Renomeando KernelLIb -> CoreLib.
 #============================================================================
 
 
@@ -81,10 +85,10 @@ COMPILER_SYMBOLS = -dKERNEL
 LINKER_OPTIONS = -T $(CONFIG_DIR)/kernel_ld.cfg -Map kernel.map
 
 
-LIBS_DEPS = config drivers kernel libboot libdrivers librtl libkernel liboth libstdlibs libsystem
+LIBS_DEPS = config drivers kernel libboot libdrivers librtl libcore liboth libstdlibs libsystem
 
 KERNEL_DEPS = consoleio.o tinystrscanner.o sysutils.o system.o stdlib.o syscalls.o\
-  systemcalls.o kernellib.o debuginfo.o errorsdef.o filesystem.o grosstty.o grosscrt.o stdio.o\
+  systemcalls.o corelib.o debuginfo.o errorsdef.o filesystem.o grosstty.o grosscrt.o stdio.o\
   bootbt32.o
 
 
@@ -129,8 +133,8 @@ libdrivers:
 librtl:
 	ln -s $(MAIN_DIR)/lib/fpc-rtl/* .
 
-libkernel:
-	ln -s $(MAIN_DIR)/lib/kernel/* .
+libcore:
+	ln -s $(MAIN_DIR)/lib/core/* .
 
 liboth:
 	ln -s $(MAIN_DIR)/lib/oth/* .

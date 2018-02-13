@@ -25,8 +25,8 @@
   --------------------------------------------------------------------------
   Unit interface de chamadas de sistema do kernel.
   --------------------------------------------------------------------------
-  Versao: 0.2.2
-  Data: 11/01/2018
+  Versao: 0.2.3
+  Data: 13/02/2018
   --------------------------------------------------------------------------
   Compilar: Compilavel FPC
   > fpc systemcalls.pas
@@ -51,6 +51,10 @@
 
   - Adicionando historico ao arquivo.
   - Substituindo identação para espaços.
+  ------------------------------------------------------------------------
+  [2018-0213-1112] (v0.2.3) <Luciano Goncalez>
+
+  - Renomeando unit KernelLib -> CoreLib.
 ===========================================================================}
 
 unit SystemCalls;
@@ -63,7 +67,7 @@ interface
 implementation
 
 uses SystemDef, SysCallsDef, ErrorsDef,
-  KernelLib, FileSystem;
+  CoreLib, FileSystem;
 
 
 function DirectCall(AEAX, AEBX, AECX, AEDX : UInt) : SInt;
