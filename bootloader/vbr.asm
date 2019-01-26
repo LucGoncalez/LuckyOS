@@ -154,7 +154,7 @@ OEMID:
 
 
 ; ### BPB [todas as FATs] ###
-; (Os dados aqui são configurados por uma formação, antes da instalação do vbr)
+; (Os dados aqui são configurados por uma formatação, antes da instalação do vbr)
 BPB:
   ; Bytes Per Sector:
   ; This is the size of a hardware sector and for most disks in use in the United States, the value
@@ -285,13 +285,13 @@ BPB:
   ; file in the root directory.
   .VolumeLabel:
     times 11 db 0       ; VolumeLabel (DB 11 Bytes, definido na formatação)
-    times 0x36 - ($ - $$) db 0x20		; O nome deve prenciso com espaços
+    times 0x36 - ($ - $$) db 0x20		; O nome deve preenchido com espaços
 
   ; System ID:
   ; This field is either "FAT12" or "FAT16," depending on the format of the disk.
   .SystemID:
     times 8 db 0        ; SystemID (DB 8 Bytes; FAT12 ou FAT16)
-    times 0x3E - ($ - $$) db 0x20 	; O nome deve prenciso com espaços
+    times 0x3E - ($ - $$) db 0x20 	; O nome deve preenchido com espaços
 
 
 
